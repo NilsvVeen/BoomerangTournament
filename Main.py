@@ -136,22 +136,33 @@ def read_throwers_safe(file_path):
     return throwers
 
 
+import shutil
+import os
+import random
+
 def load_restrictions():
     try:
-        with open("input/restrictions.txt", "r", encoding="utf-8-sig") as file:
+        # Step 1: Copy the original restrictions file to a temporary file
+        shutil.copy("input/restrictions.txt", "input/temp_restrictions.txt")
+
+        # Step 2: Read from the temporary file
+        with open("input/temp_restrictions.txt", "r", encoding="utf-8-sig") as file:
             for line in file:
                 # Extract the group and members from the line
                 members = line.strip()[1:-1].split(", ")  # Remove brackets and split by comma
-                group_tag = f"restricted_{random.randint(1000, 9999)}"
+                group_tag = f"restricted_{random.randint(1000, 9999)}"  # Create a unique tag
+
                 # Apply the color for the restriction
                 random_color = "#{:02x}{:02x}{:02x}".format(random.randint(100, 255), random.randint(100, 255),
                                                             random.randint(100, 255))
+
+                # Apply the restriction tags to the Treeview
                 for member in members:
                     # Match the member name and apply the restriction
                     for i, thrower in enumerate(throwers):
                         # Compare first and last names to match
                         if f"{thrower[0]} {thrower[1]}" == member:
-                            # Apply the tag based on the row index
+                            # Get the actual item ID of the row
                             item_id = tree.get_children()[i]
                             tree.item(item_id, tags=(group_tag,))
                             set_tags(group_tag, random_color)
@@ -159,8 +170,14 @@ def load_restrictions():
     except FileNotFoundError:
         print("No restrictions file found.")
     finally:
-        # After loading restrictions, write them back to the file
-        update_restrictions_file()
+        # Step 3: After applying restrictions, write back the temporary file to the original restrictions.txt
+        with open("input/temp_restrictions.txt", "r", encoding="utf-8-sig") as temp_file:
+            with open("input/restrictions.txt", "w", encoding="utf-8-sig") as original_file:
+                original_file.write(temp_file.read())  # Copy content from temp file back to original file
+
+        # Clean up by deleting the temporary file
+        os.remove("input/temp_restrictions.txt")
+
 
 
 def update_restrictions_file():
