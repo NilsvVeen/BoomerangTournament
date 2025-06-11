@@ -142,41 +142,38 @@ import random
 
 def load_restrictions():
     try:
-        # Step 1: Copy the original restrictions file to a temporary file
         shutil.copy("input/restrictions.txt", "input/temp_restrictions.txt")
 
-        # Step 2: Read from the temporary file
         with open("input/temp_restrictions.txt", "r", encoding="utf-8-sig") as file:
             for line in file:
-                # Extract the group and members from the line
-                members = line.strip()[1:-1].split(", ")  # Remove brackets and split by comma
-                group_tag = f"restricted_{random.randint(1000, 9999)}"  # Create a unique tag
-
-                # Apply the color for the restriction
+                members = line.strip()[1:-1].split(", ")  # Remove brackets and split names
+                group_tag = f"restricted_{random.randint(1000, 9999)}"
                 random_color = "#{:02x}{:02x}{:02x}".format(random.randint(100, 255), random.randint(100, 255),
                                                             random.randint(100, 255))
 
-                # Apply the restriction tags to the Treeview
+                group_items = []  # Store Treeview item IDs for this group
+
                 for member in members:
-                    # Match the member name and apply the restriction
                     for i, thrower in enumerate(throwers):
-                        # Compare first and last names to match
                         if f"{thrower[0]} {thrower[1]}" == member:
-                            # Get the actual item ID of the row
                             item_id = tree.get_children()[i]
                             tree.item(item_id, tags=(group_tag,))
-                            set_tags(group_tag, random_color)
+                            group_items.append(item_id)
                             break
+
+                if group_items:
+                    set_tags(group_tag, random_color)
+                    restricted_groups[group_tag] = group_items  # ✅ Add to global tracking
+
     except FileNotFoundError:
         print("No restrictions file found.")
+
     finally:
-        # Step 3: After applying restrictions, write back the temporary file to the original restrictions.txt
         with open("input/temp_restrictions.txt", "r", encoding="utf-8-sig") as temp_file:
             with open("input/restrictions.txt", "w", encoding="utf-8-sig") as original_file:
-                original_file.write(temp_file.read())  # Copy content from temp file back to original file
-
-        # Clean up by deleting the temporary file
+                original_file.write(temp_file.read())
         os.remove("input/temp_restrictions.txt")
+
 
 
 
@@ -203,6 +200,8 @@ def remove_restriction():
         # Get the tag of the selected item
         group_tag = tree.item(selected_item)["tags"][0]
         # Remove the restriction from restricted_groups
+        print("GROUPS",  restricted_groups)
+        print("tag",  group_tag)
         if group_tag in restricted_groups:
             del restricted_groups[group_tag]
             # Remove the tag and reset the color
