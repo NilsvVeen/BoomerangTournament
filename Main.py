@@ -147,19 +147,34 @@ def load_restrictions():
                 random_color = "#{:02x}{:02x}{:02x}".format(random.randint(100, 255), random.randint(100, 255),
                                                             random.randint(100, 255))
                 for member in members:
-                    print(member)
                     # Match the member name and apply the restriction
                     for i, thrower in enumerate(throwers):
                         # Compare first and last names to match
                         if f"{thrower[0]} {thrower[1]}" == member:
-                            print(thrower[0], "      " , thrower[1])
-                            print(i, thrower)
-                            # Apply the tag based on row index (no need to add +1)
-                            tree.item(i, tags=(group_tag,))  # Directly using i (zero-based index)
+                            # Apply the tag based on the row index
+                            item_id = tree.get_children()[i]
+                            tree.item(item_id, tags=(group_tag,))
                             set_tags(group_tag, random_color)
                             break
     except FileNotFoundError:
         print("No restrictions file found.")
+    finally:
+        # After loading restrictions, write them back to the file
+        update_restrictions_file()
+
+
+def update_restrictions_file():
+    with open("input/restrictions.txt", "w", encoding="utf-8-sig") as file:
+        for group, members in restricted_groups.items():
+            # Fetch the names of throwers from the list using their index in Treeview
+            member_names = []
+            for item in members:
+                row_index = int(tree.item(item, "values")[0]) - 1  # Adjust for zero-based indexing
+                first_name, last_name, _, _ = throwers[row_index]
+                member_names.append(f"{first_name} {last_name}")
+            # Write the group of restricted throwers as a single line in the file
+            file.write(f"[{', '.join(member_names)}]\n")
+
 
 
 
