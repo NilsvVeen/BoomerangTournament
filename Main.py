@@ -122,8 +122,6 @@ def update_restrictions_file():
             file.write(f"[{', '.join(member_names)}]\n")
 
 
-
-
 # Function to safely read the throwers file
 def read_throwers_safe(file_path):
     throwers = []
@@ -136,6 +134,53 @@ def read_throwers_safe(file_path):
     except Exception as e:
         messagebox.showerror("File Read Error", f"Error reading file: {str(e)}")
     return throwers
+
+
+def load_restrictions():
+    try:
+        with open("input/restrictions.txt", "r", encoding="utf-8-sig") as file:
+            for line in file:
+                # Extract the group and members from the line
+                members = line.strip()[1:-1].split(", ")  # Remove brackets and split by comma
+                group_tag = f"restricted_{random.randint(1000, 9999)}"
+                # Apply the color for the restriction
+                random_color = "#{:02x}{:02x}{:02x}".format(random.randint(100, 255), random.randint(100, 255),
+                                                            random.randint(100, 255))
+                for member in members:
+                    print(member)
+                    # Match the member name and apply the restriction
+                    for i, thrower in enumerate(throwers):
+                        # Compare first and last names to match
+                        if f"{thrower[0]} {thrower[1]}" == member:
+                            print(thrower[0], "      " , thrower[1])
+                            print(i, thrower)
+                            # Apply the tag based on row index (no need to add +1)
+                            tree.item(i, tags=(group_tag,))  # Directly using i (zero-based index)
+                            set_tags(group_tag, random_color)
+                            break
+    except FileNotFoundError:
+        print("No restrictions file found.")
+
+
+
+
+# Function to remove selected restriction
+def remove_restriction():
+    selected_item = tree.selection()
+    if selected_item:
+        # Get the tag of the selected item
+        group_tag = tree.item(selected_item)["tags"][0]
+        # Remove the restriction from restricted_groups
+        if group_tag in restricted_groups:
+            del restricted_groups[group_tag]
+            # Remove the tag and reset the color
+            tree.tag_configure(group_tag, background="", foreground="")
+            tree.item(selected_item, tags=())  # Clear the tag for the item
+            update_restrictions_file()
+        else:
+            messagebox.showinfo("No Restriction", "This thrower is not part of any restricted group.")
+    else:
+        messagebox.showerror("Selection Error", "Please select a thrower to remove the restriction.")
 
 
 # GUI setup
@@ -170,6 +215,9 @@ throwers = read_throwers_safe(file_path)
 # Display throwers in the Treeview
 display_throwers(tree, throwers)
 
+# Load restrictions and apply colors on startup
+load_restrictions()
+
 # Add UI components for adding/removing throwers
 add_frame = tk.Frame(throwers_tab)
 add_frame.pack(pady=10)
@@ -202,6 +250,9 @@ remove_button.grid(row=0, column=1, padx=10)
 
 restrict_button = tk.Button(button_frame, text="Restrict Couple/Group", command=restrict_couple)
 restrict_button.grid(row=0, column=2, padx=10)
+
+remove_restriction_button = tk.Button(button_frame, text="Remove Restriction", command=remove_restriction)
+remove_restriction_button.grid(row=1, column=0, padx=10)
 
 # Bind the event to select a row for removal
 tree.bind("<ButtonRelease-1>", lambda event: tree.selection())
