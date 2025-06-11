@@ -35,6 +35,7 @@ def add_thrower():
     throwers.append((first_name, last_name, nationality, category))
     display_throwers(tree, throwers)
     clear_entries()
+    update_throwers_file()
 
 
 # Function to remove selected thrower
@@ -44,10 +45,11 @@ def remove_thrower():
         confirmation = messagebox.askyesno("Delete Confirmation",
                                            "Are you sure you want to delete the selected thrower?")
         if confirmation:
-            # Remove the corresponding thrower from the list
+            # Remove the corresponding thrower from the list using row index
             index = tree.index(selected_item)
             throwers.pop(index)
             display_throwers(tree, throwers)
+            update_throwers_file()
         else:
             messagebox.showinfo("Delete Cancelled", "Deletion was cancelled.")
     else:
@@ -61,11 +63,19 @@ def restrict_couple():
         messagebox.showerror("Selection Error", "Please select at least two throwers to restrict")
         return
 
+    # Check if any selected thrower is already part of a restricted group
+    already_restricted = [item for item in selected_items if any(item in group for group in restricted_groups.values())]
+    if already_restricted:
+        messagebox.showerror("Restriction Error",
+                             f"The following throwers are already part of a restricted group: {', '.join(str(i) for i in already_restricted)}")
+        return
+
     # Create a unique tag for each restricted group
     group_tag = f"restricted_{random.randint(1000, 9999)}"  # Generate a random tag for the group
     for item in selected_items:
         tree.item(item, tags=(group_tag,))
 
+    # Add the group to the restricted groups dictionary
     restricted_groups[group_tag] = selected_items  # Keep track of the restricted group
 
     # Generate a random background color for this group
@@ -74,6 +84,7 @@ def restrict_couple():
 
     # Set the color for this group
     set_tags(group_tag, random_color)
+    update_restrictions_file()
 
 
 # Function to set tags for color coding
@@ -87,6 +98,44 @@ def clear_entries():
     last_name_entry.delete(0, tk.END)
     nationality_entry.delete(0, tk.END)
     category_entry.delete(0, tk.END)
+
+
+# Function to update the throwers list file (input/throwers_list.txt)
+def update_throwers_file():
+    with open("input/throwers_list.txt", "w", encoding="utf-8-sig") as file:
+        for thrower in throwers:
+            file.write(" | ".join(thrower) + "\n")
+
+
+def update_restrictions_file():
+    with open("input/restrictions.txt", "w", encoding="utf-8-sig") as file:
+        for group, members in restricted_groups.items():
+            # Loop through the selected members and match names from the throwers list
+            member_names = []
+            for item in members:
+                # Extract the row index based on the Treeview selection
+                # Get the first column value (row number) to use as index
+                row_index = int(tree.item(item, "values")[0]) - 1  # Adjust for zero-based indexing
+                first_name, last_name, _, _ = throwers[row_index]
+                member_names.append(f"{first_name} {last_name}")
+            # Write the group of restricted throwers as a single line in the file
+            file.write(f"[{', '.join(member_names)}]\n")
+
+
+
+
+# Function to safely read the throwers file
+def read_throwers_safe(file_path):
+    throwers = []
+    try:
+        with open(file_path, "r", encoding="utf-8-sig", errors="ignore") as file:
+            for line in file:
+                thrower = line.strip().split(" | ")
+                if len(thrower) == 4:  # Ensure the line has the correct number of columns
+                    throwers.append(thrower)
+    except Exception as e:
+        messagebox.showerror("File Read Error", f"Error reading file: {str(e)}")
+    return throwers
 
 
 # GUI setup
@@ -116,7 +165,7 @@ restricted_groups = {}  # Dictionary to keep track of restricted groups with the
 
 # Load throwers from file
 file_path = "input/throwers_list.txt"  # Adjust the path as needed
-throwers = read_throwers(file_path)
+throwers = read_throwers_safe(file_path)
 
 # Display throwers in the Treeview
 display_throwers(tree, throwers)
