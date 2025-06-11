@@ -324,7 +324,6 @@ def are_restricted(t1, t2):
     return False
 
 
-# === Function: Create groups respecting restrictions ===
 def generate_groups():
     try:
         group_size = int(group_size_entry.get())
@@ -335,26 +334,43 @@ def generate_groups():
         for item in groups_tree.get_children():
             groups_tree.delete(item)
 
-        # Shuffle and start grouping
-        remaining = throwers.copy()
-        random.shuffle(remaining)
+        # Step 1: Build restricted groups as units
+        restricted_units = []
+        used_indices = set()
+
+        for group in restricted_groups.values():
+            unit = []
+            for item in group:
+                row_index = int(tree.item(item, "values")[0]) - 1
+                if row_index not in used_indices:
+                    unit.append(throwers[row_index])
+                    used_indices.add(row_index)
+            if unit:
+                restricted_units.append(unit)
+
+        # Step 2: Add the remaining (non-restricted) throwers as individual units
+        unrestricted_units = [
+            [thrower] for i, thrower in enumerate(throwers) if i not in used_indices
+        ]
+
+        all_units = restricted_units + unrestricted_units
+        random.shuffle(all_units)
+
+        # Step 3: Form groups using units
         groups = []
         current_group = []
-        index = 1
-
-        while remaining:
-            candidate = remaining.pop(0)
-
-            # Check if candidate can fit in the current group
-            conflict = any(are_restricted(candidate, other) for other in current_group)
-            if not conflict:
-                current_group.append(candidate)
-
-            if len(current_group) == group_size or (not remaining and current_group):
-                groups.append(current_group)
+        for unit in all_units:
+            if len(current_group) + len(unit) > group_size:
+                if current_group:
+                    groups.append(current_group)
                 current_group = []
 
-        # Display results
+            current_group.extend(unit)
+
+        if current_group:
+            groups.append(current_group)
+
+        # Step 4: Display results
         for group_num, group in enumerate(groups, start=1):
             for thrower in group:
                 groups_tree.insert("", "end", values=(f"Group {group_num}", *thrower))
