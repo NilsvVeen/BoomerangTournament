@@ -288,4 +288,84 @@ remove_restriction_button.grid(row=1, column=0, padx=10)
 # Bind the event to select a row for removal
 tree.bind("<ButtonRelease-1>", lambda event: tree.selection())
 
+
+# === Create Groups Tab ===
+groups_tab = ttk.Frame(notebook)
+notebook.add(groups_tab, text="Group Generator")
+
+group_frame = tk.Frame(groups_tab)
+group_frame.pack(pady=10)
+
+# Input: Desired group size
+tk.Label(group_frame, text="Group Size:").grid(row=0, column=0, padx=5)
+group_size_entry = tk.Entry(group_frame)
+group_size_entry.grid(row=0, column=1, padx=5)
+
+# Treeview to display groups
+groups_tree = ttk.Treeview(groups_tab, columns=("Group", "First Name", "Last Name", "Nationality", "Category"),
+                           show="headings", height=15)
+for col in ("Group", "First Name", "Last Name", "Nationality", "Category"):
+    groups_tree.heading(col, text=col)
+groups_tree.pack(fill="both", expand=True, padx=10, pady=10)
+
+
+# === Helper: Check if two throwers are restricted ===
+def are_restricted(t1, t2):
+    name1 = f"{t1[0]} {t1[1]}"
+    name2 = f"{t2[0]} {t2[1]}"
+    for group in restricted_groups.values():
+        names = []
+        for item in group:
+            row_index = int(tree.item(item, "values")[0]) - 1
+            fn, ln, _, _ = throwers[row_index]
+            names.append(f"{fn} {ln}")
+        if name1 in names and name2 in names:
+            return True
+    return False
+
+
+# === Function: Create groups respecting restrictions ===
+def generate_groups():
+    try:
+        group_size = int(group_size_entry.get())
+        if group_size <= 0:
+            raise ValueError
+
+        # Clear previous output
+        for item in groups_tree.get_children():
+            groups_tree.delete(item)
+
+        # Shuffle and start grouping
+        remaining = throwers.copy()
+        random.shuffle(remaining)
+        groups = []
+        current_group = []
+        index = 1
+
+        while remaining:
+            candidate = remaining.pop(0)
+
+            # Check if candidate can fit in the current group
+            conflict = any(are_restricted(candidate, other) for other in current_group)
+            if not conflict:
+                current_group.append(candidate)
+
+            if len(current_group) == group_size or (not remaining and current_group):
+                groups.append(current_group)
+                current_group = []
+
+        # Display results
+        for group_num, group in enumerate(groups, start=1):
+            for thrower in group:
+                groups_tree.insert("", "end", values=(f"Group {group_num}", *thrower))
+
+    except ValueError:
+        messagebox.showerror("Input Error", "Please enter a valid integer group size.")
+
+
+# Button to trigger group generation
+generate_button = tk.Button(group_frame, text="Generate Groups", command=generate_groups)
+generate_button.grid(row=0, column=2, padx=10)
+
+
 root.mainloop()
