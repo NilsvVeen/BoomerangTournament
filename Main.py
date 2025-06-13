@@ -3,6 +3,47 @@ from tkinter import ttk, messagebox
 from readThrowers import read_throwers  # Import the function to read throwers
 import random
 
+import csv
+from datetime import datetime
+import os
+
+def save_accuracy_results():
+    event = current_event_order[0]  # Assume we're on first event
+    folder = "output"
+    os.makedirs(folder, exist_ok=True)
+    filename = os.path.join(folder, f"{event.lower().replace(' ', '_')}_results.csv")
+
+    with open(filename, "w", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        writer.writerow(["Name", "Score"])
+
+        for thrower in throwers:
+            full_name = f"{thrower[0]} {thrower[1]}"
+            entry = score_entries.get((event, full_name))
+            if entry:
+                try:
+                    score = int(entry.get())
+                except ValueError:
+                    score = 0
+
+                # Write to CSV
+                writer.writerow([full_name, score])
+
+                # Update total_scores
+                if full_name not in total_scores:
+                    total_scores[full_name] = [0] * len(current_event_order)
+                event_index = current_event_order.index(event)
+                total_scores[full_name][event_index] = score
+                total_scores[full_name][-1:] = [sum(total_scores[full_name][:-1])]
+
+    update_total_points_tab()
+    messagebox.showinfo("Saved", f"{event} scores saved to {filename}")
+
+
+
+score_entries = {}  # Format: { (event, full_name): entry_widget }
+total_scores = {}   # Format: { full_name: [score_per_event, ..., total] }
+
 
 # Function to create groups based on throwers
 def create_groups(throwers, group_size):
@@ -586,6 +627,93 @@ event_number_listbox.bind("<<ListboxSelect>>", on_number_select)
 
 refresh_event_listboxes()
 
+def update_total_points_tab():
+    # Find and clear the existing Total Points tab
+    for i in range(len(notebook.tabs())):
+        if notebook.tab(i, "text") == "Total Points":
+            notebook.forget(i)
+            break
+
+    summary_tab = ttk.Frame(notebook)
+    notebook.add(summary_tab, text="Total Points")
+
+    summary_canvas = tk.Canvas(summary_tab)
+    summary_scrollbar = ttk.Scrollbar(summary_tab, orient="vertical", command=summary_canvas.yview)
+    summary_frame = tk.Frame(summary_canvas)
+
+    summary_frame.bind(
+        "<Configure>",
+        lambda e: summary_canvas.configure(scrollregion=summary_canvas.bbox("all"))
+    )
+
+    summary_canvas.create_window((0, 0), window=summary_frame, anchor="nw")
+    summary_canvas.configure(yscrollcommand=summary_scrollbar.set)
+
+    summary_canvas.pack(side="left", fill="both", expand=True)
+    summary_scrollbar.pack(side="right", fill="y")
+
+    # Headers
+    tk.Label(summary_frame, text="Thrower Name", font=("Helvetica", 12, "bold")).grid(row=0, column=0, padx=10, pady=5, sticky="w")
+    for j, event in enumerate(current_event_order):
+        tk.Label(summary_frame, text=event, font=("Helvetica", 12, "bold")).grid(row=0, column=j + 1, padx=5, pady=5, sticky="w")
+    tk.Label(summary_frame, text="Total", font=("Helvetica", 12, "bold")).grid(row=0, column=len(current_event_order) + 1, padx=10, pady=5, sticky="w")
+
+    for i, thrower in enumerate(throwers):
+        full_name = f"{thrower[0]} {thrower[1]}"
+        scores = total_scores.get(full_name, [0] * (len(current_event_order) + 1))
+        tk.Label(summary_frame, text=full_name, font=("Helvetica", 11)).grid(row=i + 1, column=0, sticky="w", padx=10, pady=2)
+        for j, s in enumerate(scores[:-1]):
+            tk.Label(summary_frame, text=str(s), font=("Helvetica", 11)).grid(row=i + 1, column=j + 1, padx=5, pady=2)
+        tk.Label(summary_frame, text=str(scores[-1]), font=("Helvetica", 11, "bold")).grid(row=i + 1, column=len(current_event_order) + 1, padx=10, pady=2)
+
+def next_event_grouping():
+    try:
+        group_size = int(group_size_entry.get())
+        if group_size <= 0:
+            raise ValueError
+    except:
+        messagebox.showerror("Input Error", "Please enter a valid integer group size first.")
+        return
+
+    thrower_scores = []
+    for thrower in throwers:
+        full_name = f"{thrower[0]} {thrower[1]}"
+        score = total_scores.get(full_name, [0] * (len(current_event_order) + 1))[-1]
+        thrower_scores.append((score, thrower))
+
+    thrower_scores.sort(reverse=True, key=lambda x: x[0])
+    sorted_throwers = [t[1] for t in thrower_scores]
+
+    # Now generate groups from sorted list
+    groups_tree.delete(*groups_tree.get_children())
+    for i, chunk in enumerate([sorted_throwers[x:x + group_size] for x in range(0, len(sorted_throwers), group_size)]):
+        for t in chunk:
+            groups_tree.insert("", "end", values=(f"Group {i + 1}", *t))
+
+def next_event_grouping():
+    try:
+        group_size = int(group_size_entry.get())
+        if group_size <= 0:
+            raise ValueError
+    except:
+        messagebox.showerror("Input Error", "Please enter a valid integer group size first.")
+        return
+
+    thrower_scores = []
+    for thrower in throwers:
+        full_name = f"{thrower[0]} {thrower[1]}"
+        score = total_scores.get(full_name, [0] * (len(current_event_order) + 1))[-1]
+        thrower_scores.append((score, thrower))
+
+    thrower_scores.sort(reverse=True, key=lambda x: x[0])
+    sorted_throwers = [t[1] for t in thrower_scores]
+
+    # Now generate groups from sorted list
+    groups_tree.delete(*groups_tree.get_children())
+    for i, chunk in enumerate([sorted_throwers[x:x + group_size] for x in range(0, len(sorted_throwers), group_size)]):
+        for t in chunk:
+            groups_tree.insert("", "end", values=(f"Group {i + 1}", *t))
+
 
 def create_score_tab_for_first_event_and_summary():
     if not current_event_order:
@@ -621,6 +749,7 @@ def create_score_tab_for_first_event_and_summary():
         entry = tk.Entry(scrollable_frame, width=10)
         entry.insert(0, "0")
         entry.grid(row=i + 1, column=1, padx=10, pady=2)
+        score_entries[(first_event, full_name)] = entry
 
     # === Final Summary Tab ===
     summary_tab = ttk.Frame(notebook)
@@ -662,10 +791,35 @@ def create_score_tab_for_first_event_and_summary():
             row=i + 1, column=len(current_event_order) + 1, padx=10, pady=2
         )
 
+    button_bar = tk.Frame(scrollable_frame)
+    button_bar.grid(row=len(throwers) + 2, column=0, columnspan=2, pady=10)
+
+    save_btn = tk.Button(button_bar, text="Save Results", command=save_accuracy_results)
+    save_btn.pack(side="left", padx=10)
+
+    next_event_btn = tk.Button(button_bar, text="Next Event Grouping", command=next_event_grouping)
+    next_event_btn.pack(side="left", padx=10)
+
 
 score_tab_button = tk.Button(control_frame, text="Create Score Tabs", command=create_score_tab_for_first_event_and_summary)
 score_tab_button.grid(row=0, column=3, padx=10)
 
 
 
+
+
 root.mainloop()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
