@@ -323,6 +323,76 @@ def are_restricted(t1, t2):
             return True
     return False
 
+def generate_balanced_groups():
+    try:
+        group_size = int(group_size_entry.get())
+        if group_size <= 0:
+            raise ValueError
+
+        for item in groups_tree.get_children():
+            groups_tree.delete(item)
+
+        # Step 1: Build restricted units
+        restricted_units = []
+        used_indices = set()
+        for group in restricted_groups.values():
+            unit = []
+            for item in group:
+                row_index = int(tree.item(item, "values")[0]) - 1
+                if row_index not in used_indices:
+                    unit.append(throwers[row_index])
+                    used_indices.add(row_index)
+            if unit:
+                restricted_units.append(unit)
+
+        # Step 2: Group remaining throwers by category
+        categories = {}
+        for i, thrower in enumerate(throwers):
+            if i in used_indices:
+                continue
+            category = thrower[3].lower()
+            if category not in categories:
+                categories[category] = []
+            categories[category].append(thrower)
+
+        # Step 3: Sort categories into tiers (assuming stronger throwers come first alphabetically)
+        sorted_cats = sorted(categories.items(), key=lambda x: x[0])
+        sorted_throwers = []
+        for _, tlist in sorted_cats:
+            random.shuffle(tlist)
+            sorted_throwers.extend(tlist)
+
+        # Convert single throwers to 1-element units
+        unrestricted_units = [[t] for t in sorted_throwers]
+        all_units = restricted_units + unrestricted_units
+
+        # Step 4: Distribute units into groups round-robin
+        num_groups = (len(throwers) + group_size - 1) // group_size
+        groups = [[] for _ in range(num_groups)]
+
+        i = 0
+        for unit in all_units:
+            # Find next group with enough space
+            assigned = False
+            for _ in range(num_groups):
+                if len(groups[i]) + len(unit) <= group_size:
+                    groups[i].extend(unit)
+                    assigned = True
+                    break
+                i = (i + 1) % num_groups
+            if not assigned:
+                # If all groups are full, make a new one
+                groups.append(unit)
+            i = (i + 1) % len(groups)
+
+        # Step 5: Display groups
+        for group_num, group in enumerate(groups, start=1):
+            for thrower in group:
+                groups_tree.insert("", "end", values=(f"Group {group_num}", *thrower))
+
+    except ValueError:
+        messagebox.showerror("Input Error", "Please enter a valid integer group size.")
+
 
 def generate_groups():
     try:
@@ -382,6 +452,143 @@ def generate_groups():
 # Button to trigger group generation
 generate_button = tk.Button(group_frame, text="Generate Groups", command=generate_groups)
 generate_button.grid(row=0, column=2, padx=10)
+
+balanced_button = tk.Button(group_frame, text="Generate Balanced Groups", command=generate_balanced_groups)
+balanced_button.grid(row=0, column=3, padx=10)
+
+
+
+#
+#
+#
+# === Event Order Tab ===
+event_list = ["Accuracy", "Fast Catch", "Endurance", "Maximum Time Aloft", "Trick Catch", "Aussie Round 50"]
+
+# Dropdown options for adding events
+additional_events = \
+    ["Accuracy", "Fast Catch", "Endurance", "Maximum Time Aloft", "Trick Catch", "Trick Catch 50", "Aussie Round 30", "Aussie Round 40", "Aussie Round 50",
+     "Long Distance"]
+
+# Current order (copy of initial list)
+current_event_order = event_list.copy()
+
+event_order_tab = ttk.Frame(notebook)
+notebook.add(event_order_tab, text="Event Order")
+
+event_frame = tk.Frame(event_order_tab)
+event_frame.pack(pady=10)
+
+# Number listbox (left column)
+event_number_listbox = tk.Listbox(event_frame, height=10, width=4, font=("Helvetica", 12), exportselection=False)
+event_number_listbox.grid(row=0, column=0, rowspan=6, sticky="ns", padx=(10, 0))
+
+# Event name listbox (right column)
+event_listbox = tk.Listbox(event_frame, height=10, width=30, font=("Helvetica", 12), exportselection=False)
+event_listbox.grid(row=0, column=1, rowspan=6, sticky="ns")
+
+
+# === Utility ===
+def refresh_event_listboxes():
+    event_number_listbox.delete(0, tk.END)
+    event_listbox.delete(0, tk.END)
+    for idx, event in enumerate(current_event_order, start=1):
+        event_number_listbox.insert(tk.END, str(idx))
+        event_listbox.insert(tk.END, event)
+
+
+# === Add / Remove Event ===
+add_frame = tk.Frame(event_order_tab)
+add_frame.pack(pady=(5, 0))
+
+event_var = tk.StringVar(value=additional_events[0])
+event_dropdown = ttk.Combobox(add_frame, textvariable=event_var, values=additional_events, state="readonly", width=25)
+event_dropdown.grid(row=0, column=0, padx=5)
+
+def add_event():
+    new_event = event_var.get()
+    if new_event not in current_event_order:
+        current_event_order.append(new_event)
+        refresh_event_listboxes()
+    else:
+        messagebox.showinfo("Duplicate", f"{new_event} is already in the list.")
+
+add_event_button = tk.Button(add_frame, text="Add Event", command=add_event)
+add_event_button.grid(row=0, column=1, padx=5)
+
+def remove_event():
+    selected = event_listbox.curselection()
+    if selected:
+        index = selected[0]
+        del current_event_order[index]
+        refresh_event_listboxes()
+    else:
+        messagebox.showerror("Selection Error", "Select an event to remove.")
+
+remove_button = tk.Button(add_frame, text="Remove Selected Event", command=remove_event)
+remove_button.grid(row=0, column=2, padx=5)
+
+
+# === Move / Save ===
+control_frame = tk.Frame(event_order_tab)
+control_frame.pack(pady=5)
+
+def move_event_up():
+    selected = event_listbox.curselection()
+    if not selected or selected[0] == 0:
+        return
+    i = selected[0]
+    current_event_order[i], current_event_order[i - 1] = current_event_order[i - 1], current_event_order[i]
+    refresh_event_listboxes()
+    event_listbox.select_set(i - 1)
+    event_number_listbox.select_set(i - 1)
+
+def move_event_down():
+    selected = event_listbox.curselection()
+    if not selected or selected[0] == len(current_event_order) - 1:
+        return
+    i = selected[0]
+    current_event_order[i], current_event_order[i + 1] = current_event_order[i + 1], current_event_order[i]
+    refresh_event_listboxes()
+    event_listbox.select_set(i + 1)
+    event_number_listbox.select_set(i + 1)
+
+def save_event_order():
+    with open("input/event_order.txt", "w", encoding="utf-8") as f:
+        for event in current_event_order:
+            f.write(event + "\n")
+    messagebox.showinfo("Saved", "Event order saved to input/event_order.txt")
+
+up_button = tk.Button(control_frame, text="Move Up", command=move_event_up)
+up_button.grid(row=0, column=0, padx=10)
+
+down_button = tk.Button(control_frame, text="Move Down", command=move_event_down)
+down_button.grid(row=0, column=1, padx=10)
+
+save_button = tk.Button(control_frame, text="Save Order", command=save_event_order)
+save_button.grid(row=0, column=2, padx=10)
+
+
+# === Selection Syncing ===
+def on_event_select(event):
+    index = event_listbox.curselection()
+    if index:
+        event_number_listbox.select_clear(0, tk.END)
+        event_number_listbox.select_set(index[0])
+
+def on_number_select(event):
+    index = event_number_listbox.curselection()
+    if index:
+        event_listbox.select_clear(0, tk.END)
+        event_listbox.select_set(index[0])
+
+event_listbox.bind("<<ListboxSelect>>", on_event_select)
+event_number_listbox.bind("<<ListboxSelect>>", on_number_select)
+
+refresh_event_listboxes()
+
+
+
+
 
 
 root.mainloop()
