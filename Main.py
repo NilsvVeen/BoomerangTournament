@@ -587,7 +587,84 @@ event_number_listbox.bind("<<ListboxSelect>>", on_number_select)
 refresh_event_listboxes()
 
 
+def create_score_tab_for_first_event_and_summary():
+    if not current_event_order:
+        messagebox.showwarning("No Events", "No events defined in the order.")
+        return
 
+    # === First Event Tab ===
+    first_event = current_event_order[0]
+    event_tab = ttk.Frame(notebook)
+    notebook.add(event_tab, text=first_event)
+
+    canvas = tk.Canvas(event_tab)
+    scrollbar = ttk.Scrollbar(event_tab, orient="vertical", command=canvas.yview)
+    scrollable_frame = tk.Frame(canvas)
+
+    scrollable_frame.bind(
+        "<Configure>",
+        lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+    )
+
+    canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+
+    tk.Label(scrollable_frame, text="Thrower Name", font=("Helvetica", 12, "bold")).grid(row=0, column=0, padx=10, pady=5, sticky="w")
+    tk.Label(scrollable_frame, text="Score", font=("Helvetica", 12, "bold")).grid(row=0, column=1, padx=10, pady=5, sticky="w")
+
+    for i, thrower in enumerate(throwers):
+        full_name = f"{thrower[0]} {thrower[1]}"
+        tk.Label(scrollable_frame, text=full_name, font=("Helvetica", 11)).grid(row=i + 1, column=0, sticky="w", padx=10, pady=2)
+        entry = tk.Entry(scrollable_frame, width=10)
+        entry.insert(0, "0")
+        entry.grid(row=i + 1, column=1, padx=10, pady=2)
+
+    # === Final Summary Tab ===
+    summary_tab = ttk.Frame(notebook)
+    notebook.add(summary_tab, text="Total Points")
+
+    summary_canvas = tk.Canvas(summary_tab)
+    summary_scrollbar = ttk.Scrollbar(summary_tab, orient="vertical", command=summary_canvas.yview)
+    summary_frame = tk.Frame(summary_canvas)
+
+    summary_frame.bind(
+        "<Configure>",
+        lambda e: summary_canvas.configure(scrollregion=summary_canvas.bbox("all"))
+    )
+
+    summary_canvas.create_window((0, 0), window=summary_frame, anchor="nw")
+    summary_canvas.configure(yscrollcommand=summary_scrollbar.set)
+
+    summary_canvas.pack(side="left", fill="both", expand=True)
+    summary_scrollbar.pack(side="right", fill="y")
+
+    # Header Row
+    tk.Label(summary_frame, text="Thrower Name", font=("Helvetica", 12, "bold")).grid(row=0, column=0, padx=10, pady=5, sticky="w")
+
+    for j, event in enumerate(current_event_order):
+        tk.Label(summary_frame, text=event, font=("Helvetica", 12, "bold")).grid(row=0, column=j + 1, padx=5, pady=5, sticky="w")
+
+    tk.Label(summary_frame, text="Total", font=("Helvetica", 12, "bold")).grid(row=0, column=len(current_event_order) + 1, padx=10, pady=5, sticky="w")
+
+    # Data Rows
+    for i, thrower in enumerate(throwers):
+        full_name = f"{thrower[0]} {thrower[1]}"
+        tk.Label(summary_frame, text=full_name, font=("Helvetica", 11)).grid(row=i + 1, column=0, sticky="w", padx=10, pady=2)
+
+        total_score = 0
+        for j in range(len(current_event_order)):
+            tk.Label(summary_frame, text="0", font=("Helvetica", 11)).grid(row=i + 1, column=j + 1, padx=5, pady=2)
+
+        tk.Label(summary_frame, text=str(total_score), font=("Helvetica", 11, "bold")).grid(
+            row=i + 1, column=len(current_event_order) + 1, padx=10, pady=2
+        )
+
+
+score_tab_button = tk.Button(control_frame, text="Create Score Tabs", command=create_score_tab_for_first_event_and_summary)
+score_tab_button.grid(row=0, column=3, padx=10)
 
 
 
