@@ -9,28 +9,101 @@ import os
 
 import random
 
+
+# def make_fair_competitive_groups(throwers_with_scores, num_groups=4, block_size=5):
+#     sorted_throwers = sorted(throwers_with_scores, key=lambda x: -x[0])
+#     groups = [[] for _ in range(num_groups)]
+#
+#     # Break into blocks of N (e.g. 5-ranked groups)
+#     blocks = [sorted_throwers[i:i + block_size] for i in range(0, len(sorted_throwers), block_size)]
+#
+#     current_index = 0
+#     for block in blocks:
+#         random.shuffle(block)  # small shuffle to reduce exact rank streaks
+#         for thrower in block:
+#             groups[current_index % num_groups].append(thrower[1])
+#             current_index += 1
+#
+#     return groups
+
+import random
+
 def make_fair_competitive_groups(throwers_with_scores, num_groups=4):
-    # Sort by score descending
-    throwers_sorted = sorted(throwers_with_scores, key=lambda x: -x[0])
+    sorted_throwers = sorted(throwers_with_scores, key=lambda x: -x[0])
     groups = [[] for _ in range(num_groups)]
 
-    # Step 1: Choose group leaders (top N)
-    for i in range(num_groups):
-        if i < len(throwers_sorted):
-            groups[i].append(throwers_sorted[i])
+    total = len(sorted_throwers)
+    block_size = total // (2 * num_groups)
 
-    # Step 2: Distribute remaining throwers
-    remaining = throwers_sorted[num_groups:]
-    offset = 0
-    while remaining:
-        for i in range(num_groups):
-            if not remaining:
-                break
-            index = (i + offset) % num_groups
-            groups[index].append(remaining.pop(0))
-        offset += 1
+    for g in range(num_groups):
+        top_start = g * block_size
+        bottom_start = total - (g + 1) * block_size
 
-    return [[t[1] for t in group] for group in groups]
+        # Add top block
+        for i in range(block_size):
+            idx = top_start + i
+            if idx < total:
+                groups[g].append(sorted_throwers[idx][1])
+
+        # Add bottom block
+        for i in range(block_size):
+            idx = bottom_start + i
+            if idx < total:
+                groups[g].append(sorted_throwers[idx][1])
+
+    # Leftovers (if total is not divisible evenly)
+    used_indices = set()
+    for g in groups:
+        for p in g:
+            for i, (_, name) in enumerate(sorted_throwers):
+                if name == p:
+                    used_indices.add(i)
+
+    leftovers = [sorted_throwers[i][1] for i in range(total) if i not in used_indices]
+    for i, p in enumerate(leftovers):
+        groups[i % num_groups].append(p)
+
+    return groups
+
+
+
+
+# def make_fair_competitive_groups(throwers_with_scores, num_groups=4):
+#     sorted_throwers = sorted(throwers_with_scores, key=lambda x: -x[0])  # descending
+#     groups = [[] for _ in range(num_groups)]
+#     used_indices = set()
+#
+#     # Step 1: Seed top throwers (Rank 1, 2, 3, ...)
+#     for group_idx in range(num_groups):
+#         if group_idx < len(sorted_throwers):
+#             groups[group_idx].append(sorted_throwers[group_idx][1])
+#             used_indices.add(group_idx)
+#
+#     # Step 2: Fill with nearby competitors (±2 range from seed rank)
+#     for group_idx in range(num_groups):
+#         seed_idx = group_idx
+#         added = 0
+#         for offset in range(1, 3):  # Look at +1, +2 and -1, -2
+#             for neighbor_idx in [seed_idx - offset, seed_idx + offset]:
+#                 if 0 <= neighbor_idx < len(sorted_throwers) and neighbor_idx not in used_indices:
+#                     groups[group_idx].append(sorted_throwers[neighbor_idx][1])
+#                     used_indices.add(neighbor_idx)
+#                     added += 1
+#                 if added >= 2:
+#                     break
+#             if added >= 2:
+#                 break
+#
+#     # Step 3: Distribute remaining throwers round-robin
+#     remaining = [t[1] for i, t in enumerate(sorted_throwers) if i not in used_indices]
+#     for i, thrower in enumerate(remaining):
+#         groups[i % num_groups].append(thrower)
+#
+#     return groups
+
+import random
+
+
 
 
 
