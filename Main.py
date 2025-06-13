@@ -7,8 +7,36 @@ import csv
 from datetime import datetime
 import os
 
+import random
+
+def make_fair_competitive_groups(throwers_with_scores, num_groups=4):
+    # Sort by score descending
+    throwers_sorted = sorted(throwers_with_scores, key=lambda x: -x[0])
+    groups = [[] for _ in range(num_groups)]
+
+    # Step 1: Choose group leaders (top N)
+    for i in range(num_groups):
+        if i < len(throwers_sorted):
+            groups[i].append(throwers_sorted[i])
+
+    # Step 2: Distribute remaining throwers
+    remaining = throwers_sorted[num_groups:]
+    offset = 0
+    while remaining:
+        for i in range(num_groups):
+            if not remaining:
+                break
+            index = (i + offset) % num_groups
+            groups[index].append(remaining.pop(0))
+        offset += 1
+
+    return [[t[1] for t in group] for group in groups]
+
+
+
+
 def save_accuracy_results():
-    event = current_event_order[0]  # Assume we're on first event
+    event = current_event_order[0]
     folder = "output"
     os.makedirs(folder, exist_ok=True)
     filename = os.path.join(folder, f"{event.lower().replace(' ', '_')}_results.csv")
@@ -26,10 +54,8 @@ def save_accuracy_results():
                 except ValueError:
                     score = 0
 
-                # Write to CSV
                 writer.writerow([full_name, score])
 
-                # Update total_scores
                 if full_name not in total_scores:
                     total_scores[full_name] = [0] * len(current_event_order)
                 event_index = current_event_order.index(event)
@@ -38,6 +64,7 @@ def save_accuracy_results():
 
     update_total_points_tab()
     messagebox.showinfo("Saved", f"{event} scores saved to {filename}")
+
 
 
 
@@ -675,44 +702,80 @@ def next_event_grouping():
         messagebox.showerror("Input Error", "Please enter a valid integer group size first.")
         return
 
+    # Step 1: Build list of (score, thrower) pairs
     thrower_scores = []
     for thrower in throwers:
         full_name = f"{thrower[0]} {thrower[1]}"
         score = total_scores.get(full_name, [0] * (len(current_event_order) + 1))[-1]
         thrower_scores.append((score, thrower))
 
+    # Step 2: Sort descending by score
     thrower_scores.sort(reverse=True, key=lambda x: x[0])
-    sorted_throwers = [t[1] for t in thrower_scores]
 
-    # Now generate groups from sorted list
-    groups_tree.delete(*groups_tree.get_children())
-    for i, chunk in enumerate([sorted_throwers[x:x + group_size] for x in range(0, len(sorted_throwers), group_size)]):
-        for t in chunk:
-            groups_tree.insert("", "end", values=(f"Group {i + 1}", *t))
-
-def next_event_grouping():
-    try:
-        group_size = int(group_size_entry.get())
-        if group_size <= 0:
-            raise ValueError
-    except:
-        messagebox.showerror("Input Error", "Please enter a valid integer group size first.")
-        return
-
-    thrower_scores = []
-    for thrower in throwers:
+    # Step 3: Compute rank mapping
+    name_to_rank = {}
+    for i, (_, thrower) in enumerate(thrower_scores):
         full_name = f"{thrower[0]} {thrower[1]}"
-        score = total_scores.get(full_name, [0] * (len(current_event_order) + 1))[-1]
-        thrower_scores.append((score, thrower))
+        name_to_rank[full_name] = i + 1  # 1-based rank
 
-    thrower_scores.sort(reverse=True, key=lambda x: x[0])
-    sorted_throwers = [t[1] for t in thrower_scores]
+    # Step 4: Compute fair groups
+    num_groups = (len(thrower_scores) + group_size - 1) // group_size
+    fair_groups = make_fair_competitive_groups(thrower_scores, num_groups)
 
-    # Now generate groups from sorted list
+    # Step 5: Clear display
     groups_tree.delete(*groups_tree.get_children())
-    for i, chunk in enumerate([sorted_throwers[x:x + group_size] for x in range(0, len(sorted_throwers), group_size)]):
-        for t in chunk:
-            groups_tree.insert("", "end", values=(f"Group {i + 1}", *t))
+
+    # Step 6: Display and print group assignments
+    print("\n=== GROUP ASSIGNMENTS ===")
+    for group_num, group in enumerate(fair_groups, start=1):
+        for thrower in group:
+            full_name = f"{thrower[0]} {thrower[1]}"
+            rank = name_to_rank[full_name]
+            print(f"{full_name:25s}  Group {group_num:<2}  Rank {rank}")
+            groups_tree.insert("", "end", values=(f"Group {group_num}", *thrower))
+
+    # === Create next event scoring and group tabs ===
+    if len(current_event_order) > 1:
+        next_event = current_event_order[1]
+
+        # Create scoring tab
+        event_tab = ttk.Frame(notebook)
+        notebook.add(event_tab, text=next_event)
+
+        canvas = tk.Canvas(event_tab)
+        scrollbar = ttk.Scrollbar(event_tab, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas)
+        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        tk.Label(scrollable_frame, text="Thrower Name", font=("Helvetica", 12, "bold")).grid(row=0, column=0, padx=10, pady=5, sticky="w")
+        tk.Label(scrollable_frame, text="Score", font=("Helvetica", 12, "bold")).grid(row=0, column=1, padx=10, pady=5, sticky="w")
+
+        for i, thrower in enumerate(throwers):
+            full_name = f"{thrower[0]} {thrower[1]}"
+            tk.Label(scrollable_frame, text=full_name, font=("Helvetica", 11)).grid(row=i + 1, column=0, sticky="w", padx=10, pady=2)
+            entry = tk.Entry(scrollable_frame, width=10)
+            entry.insert(0, "0")
+            entry.grid(row=i + 1, column=1, padx=10, pady=2)
+            score_entries[(next_event, full_name)] = entry
+
+        # Also generate a group tab for the next event based on scores
+        thrower_scores = []
+        for thrower in throwers:
+            full_name = f"{thrower[0]} {thrower[1]}"
+            score = total_scores.get(full_name, [0] * (len(current_event_order) + 1))[-1]
+            thrower_scores.append((score, thrower))
+
+        thrower_scores.sort(reverse=True, key=lambda x: x[0])
+        num_groups = (len(thrower_scores) + group_size - 1) // group_size
+        fair_groups = make_fair_competitive_groups(thrower_scores, num_groups)
+        create_event_group_tab(next_event, [t for group in fair_groups for t in group])
+
+
+
 
 # Paste this helper function near your existing ones:
 def create_event_group_tab(event_name, thrower_list):
@@ -765,39 +828,6 @@ def save_accuracy_results():
     update_total_points_tab()
     messagebox.showinfo("Saved", f"{event} scores saved to {filename}")
 
-    # === Create next event tab ===
-    if len(current_event_order) > 1:
-        next_event = current_event_order[1]
-        event_tab = ttk.Frame(notebook)
-        notebook.add(event_tab, text=next_event)
-
-        canvas = tk.Canvas(event_tab)
-        scrollbar = ttk.Scrollbar(event_tab, orient="vertical", command=canvas.yview)
-        scrollable_frame = tk.Frame(canvas)
-        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-
-        tk.Label(scrollable_frame, text="Thrower Name", font=("Helvetica", 12, "bold")).grid(row=0, column=0, padx=10, pady=5, sticky="w")
-        tk.Label(scrollable_frame, text="Score", font=("Helvetica", 12, "bold")).grid(row=0, column=1, padx=10, pady=5, sticky="w")
-
-        for i, thrower in enumerate(throwers):
-            full_name = f"{thrower[0]} {thrower[1]}"
-            tk.Label(scrollable_frame, text=full_name, font=("Helvetica", 11)).grid(row=i + 1, column=0, sticky="w", padx=10, pady=2)
-            entry = tk.Entry(scrollable_frame, width=10)
-            entry.insert(0, "0")
-            entry.grid(row=i + 1, column=1, padx=10, pady=2)
-            score_entries[(next_event, full_name)] = entry
-
-        # === Sort throwers for grouping ===
-        sorted_throwers = sorted(
-            throwers,
-            key=lambda t: total_scores.get(f"{t[0]} {t[1]}", [0] * (len(current_event_order) + 1))[-1],
-            reverse=True
-        )
-        create_event_group_tab(next_event, sorted_throwers)
 
 # Update total_points tab to include ranking column and sorting
 def update_total_points_tab():
