@@ -94,6 +94,12 @@ def calculate_event_points(event, raw_score):
                 catch_part = parts[1].strip().replace("C", "")
                 num_catches = float(catch_part)
                 return calculate_fast_catch_points(time_taken, num_catches)
+
+            # ✅ NEW: if it's a single number like "25", assume 5 catches
+            if raw_score.replace('.', '', 1).isdigit():
+                time_taken = float(raw_score)
+                return calculate_fast_catch_points(time_taken, 5)
+
         except:
             return 0
 
