@@ -26,7 +26,6 @@ import random
 #
 #     return groups
 
-import random
 import math
 
 def calculate_fast_catch_points(time_taken, num_catches):
@@ -37,14 +36,14 @@ def calculate_fast_catch_points(time_taken, num_catches):
     if num_catches >= laps_required:
         try:
             time_taken = float(time_taken)
-            return math.floor(500 * math.log(1 + 99 * min_time / time_taken))
+            return math.floor(500 * math.log10(1 + 99 * min_time / time_taken))
         except:
             return 0
     else:
         try:
             n = int(num_catches)
             ratio = (min_time / time_limit) * (n / laps_required)
-            return math.floor(500 * math.log(1 + 99 * ratio))
+            return math.floor(500 * math.log10(1 + 99 * ratio))
         except:
             return 0
 
@@ -83,7 +82,8 @@ def calculate_event_points(event, raw_score):
     if score > max_val:
         score = max_val
 
-    return math.floor(500 * math.log(1 + 99 * score / max_val))
+    return math.floor(500 * math.log10(1 + 99 * score / max_val))
+
 
 
 def make_fair_competitive_groups(throwers_with_scores, num_groups=4):
@@ -212,7 +212,8 @@ def save_accuracy_results():
                 if full_name not in total_scores:
                     total_scores[full_name] = [0] * len(current_event_order)
                 event_index = current_event_order.index(event)
-                total_scores[full_name][event_index] = score
+                converted_score = calculate_event_points(event, score)
+                total_scores[full_name][event_index] = converted_score
                 total_scores[full_name][-1:] = [sum(total_scores[full_name][:-1])]
 
     update_total_points_tab()
@@ -1037,7 +1038,8 @@ def save_event_results(event):
                 if full_name not in total_scores:
                     total_scores[full_name] = [0] * len(current_event_order)
                 event_index = current_event_order.index(event)
-                total_scores[full_name][event_index] = score
+                converted_score = calculate_event_points(event, score)
+                total_scores[full_name][event_index] = converted_score
                 total_scores[full_name][-1:] = [sum(total_scores[full_name][:-1])]
 
     update_total_points_tab()
