@@ -1,0 +1,1 @@
+ C:\Users\Nils-Elvy\anaconda3\python.exe -m PyInstaller --noconsole --add-data "C:\Users\Nils-Elvy\anaconda3\Library\bin;Library\bin" Main.py
