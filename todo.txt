@@ -1,0 +1,7 @@
+- include restrictions for seeding
+- include file paths for build
+- load/save for everything
+- make tabs different
+- clean up code and put in different files
+- make GUI fancy
+- 
