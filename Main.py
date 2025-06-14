@@ -33,6 +33,17 @@ def calculate_fast_catch_points(time_taken, num_catches):
     time_limit = 60
     laps_required = 5
 
+    # Hardcoded values for 1C–4C
+    hardcoded_points = {
+        1: 387,
+        2: 518,
+        3: 600,
+        4: 659
+    }
+
+    if num_catches in hardcoded_points:
+        return hardcoded_points[num_catches]
+
     if num_catches >= laps_required:
         try:
             time_taken = float(time_taken)
@@ -41,7 +52,7 @@ def calculate_fast_catch_points(time_taken, num_catches):
             return 0
     else:
         try:
-            n = int(num_catches)
+            n = float(num_catches)
             ratio = (min_time / time_limit) * (n / laps_required)
             return math.floor(500 * math.log10(1 + 99 * ratio))
         except:
@@ -53,18 +64,26 @@ def calculate_event_points(event, raw_score):
     if raw_score in ["DNS", "np", "dns"]:
         return -200
 
-    if event == "Fast Catch":
-        # Assume input like "30s/5" or "60/3"
+    if event == "Fast Catch" or event == "FC":
+        # Accept formats like "60s/5", "45.2/3", or "2C"
         try:
-            parts = str(raw_score).split("/")
+            raw_score = str(raw_score).strip().upper()
+
+            # Handle "2C", "3C", etc.
+            if raw_score.endswith("C") and raw_score[:-1].isdigit():
+                catches = int(raw_score[:-1])
+                return calculate_fast_catch_points(time_taken=None, num_catches=catches)
+
+            # Handle "time/num" input
+            parts = raw_score.replace("S", "").split("/")
             if len(parts) == 2:
-                time_taken = float(parts[0].replace("s", "").strip())
-                num_catches = int(parts[1].strip())
+                time_taken = float(parts[0].strip())
+                num_catches = float(parts[1].strip())
                 return calculate_fast_catch_points(time_taken, num_catches)
         except:
             return 0
 
-    # All other events (default log-based scoring)
+    # All other events (log-based scoring with max)
     max_values = {
         "Accuracy": 100,
         "Aussie Round": 100,
@@ -83,6 +102,7 @@ def calculate_event_points(event, raw_score):
         score = max_val
 
     return math.floor(500 * math.log10(1 + 99 * score / max_val))
+
 
 
 
