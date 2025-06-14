@@ -28,6 +28,8 @@ import random
 
 import math
 
+import math
+
 def calculate_fast_catch_points(time_taken, num_catches):
     min_time = 15
     time_limit = 60
@@ -41,8 +43,19 @@ def calculate_fast_catch_points(time_taken, num_catches):
         4: 659
     }
 
-    if num_catches in hardcoded_points:
-        return hardcoded_points[num_catches]
+    # Convert to int for hardcoded catch lookup
+    if time_taken is None:
+        try:
+            catches = int(num_catches)
+            if catches in hardcoded_points:
+                return hardcoded_points[catches]
+        except:
+            return 0
+
+    try:
+        num_catches = float(num_catches)
+    except:
+        return 0
 
     if num_catches >= laps_required:
         try:
@@ -52,8 +65,7 @@ def calculate_fast_catch_points(time_taken, num_catches):
             return 0
     else:
         try:
-            n = float(num_catches)
-            ratio = (min_time / time_limit) * (n / laps_required)
+            ratio = (min_time / time_limit) * (num_catches / laps_required)
             return math.floor(500 * math.log10(1 + 99 * ratio))
         except:
             return 0
@@ -64,21 +76,23 @@ def calculate_event_points(event, raw_score):
     if raw_score in ["DNS", "np", "dns"]:
         return -200
 
-    if event == "Fast Catch" or event == "FC":
-        # Accept formats like "60s/5", "45.2/3", or "2C"
+    event = event.strip().title()
+
+    if event in ["Fast Catch", "Fc"]:
         try:
             raw_score = str(raw_score).strip().upper()
 
-            # Handle "2C", "3C", etc.
-            if raw_score.endswith("C") and raw_score[:-1].isdigit():
-                catches = int(raw_score[:-1])
+            # Only "3C" or "3c" case
+            if raw_score.endswith("C") and "/" not in raw_score:
+                catches = float(raw_score[:-1])
                 return calculate_fast_catch_points(time_taken=None, num_catches=catches)
 
-            # Handle "time/num" input
+            # Handle "time/numC" or "time/num"
             parts = raw_score.replace("S", "").split("/")
             if len(parts) == 2:
                 time_taken = float(parts[0].strip())
-                num_catches = float(parts[1].strip())
+                catch_part = parts[1].strip().replace("C", "")
+                num_catches = float(catch_part)
                 return calculate_fast_catch_points(time_taken, num_catches)
         except:
             return 0
@@ -102,6 +116,7 @@ def calculate_event_points(event, raw_score):
         score = max_val
 
     return math.floor(500 * math.log10(1 + 99 * score / max_val))
+
 
 
 
@@ -1049,7 +1064,8 @@ def save_event_results(event):
             entry = score_entries.get((event, full_name))
             if entry:
                 try:
-                    score = int(entry.get())
+                    score = entry.get().strip()
+
                 except ValueError:
                     score = 0
 
@@ -1058,7 +1074,8 @@ def save_event_results(event):
                 if full_name not in total_scores:
                     total_scores[full_name] = [0] * len(current_event_order)
                 event_index = current_event_order.index(event)
-                converted_score = calculate_event_points(event, score)
+                converted_score = calculate_event_points(event, score.strip())
+
                 total_scores[full_name][event_index] = converted_score
                 total_scores[full_name][-1:] = [sum(total_scores[full_name][:-1])]
 
