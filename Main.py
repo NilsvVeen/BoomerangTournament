@@ -27,6 +27,63 @@ import random
 #     return groups
 
 import random
+import math
+
+def calculate_fast_catch_points(time_taken, num_catches):
+    min_time = 15
+    time_limit = 60
+    laps_required = 5
+
+    if num_catches >= laps_required:
+        try:
+            time_taken = float(time_taken)
+            return math.floor(500 * math.log(1 + 99 * min_time / time_taken))
+        except:
+            return 0
+    else:
+        try:
+            n = int(num_catches)
+            ratio = (min_time / time_limit) * (n / laps_required)
+            return math.floor(500 * math.log(1 + 99 * ratio))
+        except:
+            return 0
+
+def calculate_event_points(event, raw_score):
+    if raw_score in ["DNF", "dnf"]:
+        return -100
+    if raw_score in ["DNS", "np", "dns"]:
+        return -200
+
+    if event == "Fast Catch":
+        # Assume input like "30s/5" or "60/3"
+        try:
+            parts = str(raw_score).split("/")
+            if len(parts) == 2:
+                time_taken = float(parts[0].replace("s", "").strip())
+                num_catches = int(parts[1].strip())
+                return calculate_fast_catch_points(time_taken, num_catches)
+        except:
+            return 0
+
+    # All other events (default log-based scoring)
+    max_values = {
+        "Accuracy": 100,
+        "Aussie Round": 100,
+        "MTA": 50,
+        "Endurance": 80,
+        "Trick Catch": 100
+    }
+
+    try:
+        score = float(raw_score)
+    except:
+        return 0  # Non-numeric input
+
+    max_val = max_values.get(event, 100)
+    if score > max_val:
+        score = max_val
+
+    return math.floor(500 * math.log(1 + 99 * score / max_val))
 
 
 def make_fair_competitive_groups(throwers_with_scores, num_groups=4):
@@ -781,13 +838,36 @@ def update_total_points_tab():
         tk.Label(summary_frame, text=event, font=("Helvetica", 12, "bold")).grid(row=0, column=j + 1, padx=5, pady=5, sticky="w")
     tk.Label(summary_frame, text="Total", font=("Helvetica", 12, "bold")).grid(row=0, column=len(current_event_order) + 1, padx=10, pady=5, sticky="w")
 
+    # for i, thrower in enumerate(throwers):
+    #     full_name = f"{thrower[0]} {thrower[1]}"
+    #     scores = total_scores.get(full_name, [0] * (len(current_event_order) + 1))
+    #     tk.Label(summary_frame, text=full_name, font=("Helvetica", 11)).grid(row=i + 1, column=0, sticky="w", padx=10, pady=2)
+    #     for j, s in enumerate(scores[:-1]):
+    #         tk.Label(summary_frame, text=str(s), font=("Helvetica", 11)).grid(row=i + 1, column=j + 1, padx=5, pady=2)
+    #     tk.Label(summary_frame, text=str(scores[-1]), font=("Helvetica", 11, "bold")).grid(row=i + 1, column=len(current_event_order) + 1, padx=10, pady=2)
+
     for i, thrower in enumerate(throwers):
         full_name = f"{thrower[0]} {thrower[1]}"
-        scores = total_scores.get(full_name, [0] * (len(current_event_order) + 1))
-        tk.Label(summary_frame, text=full_name, font=("Helvetica", 11)).grid(row=i + 1, column=0, sticky="w", padx=10, pady=2)
-        for j, s in enumerate(scores[:-1]):
-            tk.Label(summary_frame, text=str(s), font=("Helvetica", 11)).grid(row=i + 1, column=j + 1, padx=5, pady=2)
-        tk.Label(summary_frame, text=str(scores[-1]), font=("Helvetica", 11, "bold")).grid(row=i + 1, column=len(current_event_order) + 1, padx=10, pady=2)
+        raw_scores = total_scores.get(full_name, [0] * len(current_event_order))
+
+        tk.Label(summary_frame, text=full_name, font=("Helvetica", 11)).grid(
+            row=i + 1, column=0, sticky="w", padx=10, pady=2)
+
+        total_points = 0
+        for j, event in enumerate(current_event_order):
+            if j < len(raw_scores):
+                raw_score = raw_scores[j]
+            else:
+                raw_score = 0
+            points = calculate_event_points(event, raw_score)
+            total_points += points
+            tk.Label(summary_frame, text=str(points), font=("Helvetica", 11)).grid(
+                row=i + 1, column=j + 1, padx=5, pady=2)
+
+        # FINAL total from converted scores, not raw
+        tk.Label(summary_frame, text=str(total_points), font=("Helvetica", 11, "bold")).grid(
+            row=i + 1, column=len(current_event_order) + 1, padx=10, pady=2)
+
 
 def next_event_grouping():
     try:
