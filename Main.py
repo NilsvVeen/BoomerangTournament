@@ -146,7 +146,6 @@ def make_fair_competitive_groups(throwers_with_scores, num_groups=4):
 
         print(f"\n[DEBUG] Group {g + 1} (Top from index {top_start}, Bottom from index {bottom_start}):")
 
-        # Add top block
         for i in range(block_size):
             idx = top_start + i
             if idx < total:
@@ -154,7 +153,6 @@ def make_fair_competitive_groups(throwers_with_scores, num_groups=4):
                 print(f"  Adding (Top)    Rank {idx + 1:2}: {thrower[0]} {thrower[1]}")
                 groups[g].append(thrower)
 
-        # Add bottom block
         for i in range(block_size):
             idx = bottom_start + i
             if idx < total:
@@ -162,7 +160,6 @@ def make_fair_competitive_groups(throwers_with_scores, num_groups=4):
                 print(f"  Adding (Bottom) Rank {idx + 1:2}: {thrower[0]} {thrower[1]}")
                 groups[g].append(thrower)
 
-    # === Step 1: Track used indices
     used_indices = set()
     for g in groups:
         for p in g:
@@ -170,52 +167,69 @@ def make_fair_competitive_groups(throwers_with_scores, num_groups=4):
                 if name == p:
                     used_indices.add(i)
 
-    # === Step 2: Leftovers
     leftovers = [sorted_throwers[i][1] for i in range(total) if i not in used_indices]
     print(f"\n[DEBUG] Leftovers ({len(leftovers)}): {[f'{t[0]} {t[1]}' for t in leftovers]}")
-
     for i, p in enumerate(leftovers):
         group_index = i % num_groups
         print(f"  Adding leftover: {p[0]} {p[1]} to Group {group_index + 1}")
         groups[group_index].append(p)
 
-    # === Step 3: Handle Restricted Groups
-    print("\n[DEBUG] Enforcing Restricted Groups:")
+    # === 🔄 Fix: Ensure restricted groups are in the same group using swaps ===
+    print("\n[DEBUG] Fixing Restricted Groups with Swapping:")
     for tag, members in restricted_groups.items():
-        # Get all throwers in this restriction group
+        # Collect all full names
         full_names = []
-        for item_id in members:
-            row_index = int(tree.item(item_id, "values")[0]) - 1
-            fn, ln, _, _ = throwers[row_index]
-            full_names.append(f"{fn} {ln}")
+        for item in members:
+            row_index = int(tree.item(item, "values")[0]) - 1
+            first_name, last_name, *_ = throwers[row_index]
+            full_names.append(f"{first_name} {last_name}")
 
-        # Find where each is currently assigned
-        group_indices = {}
-        for name in full_names:
-            for i, group in enumerate(groups):
-                for t in group:
-                    if f"{t[0]} {t[1]}" == name:
-                        group_indices[name] = i
-                        break
+        # Map where each restricted thrower is
+        name_to_group_idx = {}
+        for i, group in enumerate(groups):
+            for thrower in group:
+                full_name = f"{thrower[0]} {thrower[1]}"
+                if full_name in full_names:
+                    name_to_group_idx[full_name] = i
 
-        # If already all in one group, skip
-        if len(set(group_indices.values())) <= 1:
-            print(f"  ✅ {', '.join(full_names)} already in Group {list(group_indices.values())[0] + 1}")
+        unique_groups = set(name_to_group_idx.values())
+        if len(unique_groups) <= 1:
+            print(f"  ✅ Group already unified: {', '.join(full_names)}")
             continue
 
-        # Otherwise, merge into the lowest-indexed group
-        target_group = max(group_indices.values())  # or min(), your choice
-        print(f"  ⚠️  Merging {', '.join(full_names)} into Group {target_group + 1}")
+        # Choose the group with most restricted members as the target group
+        from collections import Counter
+        target_group = Counter(name_to_group_idx.values()).most_common(1)[0][0]
+        print(f"  ⚠️  Restricted group spans multiple groups. Merging into Group {target_group + 1}")
 
-        for name, group_idx in group_indices.items():
-            if group_idx == target_group:
-                continue  # already in right group
-            # Move to target group
-            t_obj = next(t for t in groups[group_idx] if f"{t[0]} {t[1]}" == name)
-            groups[group_idx].remove(t_obj)
-            groups[target_group].append(t_obj)
+        for full_name in full_names:
+            current_group = name_to_group_idx[full_name]
+            if current_group == target_group:
+                continue  # already in place
 
-    # === Step 4: Print Final Groups
+            # Find the thrower object
+            thrower = next(t for t in groups[current_group] if f"{t[0]} {t[1]}" == full_name)
+
+            # Find a non-restricted person in target group to swap with
+            swap_candidate = None
+            for t in groups[target_group]:
+                t_name = f"{t[0]} {t[1]}"
+                if t_name not in full_names:
+                    swap_candidate = t
+                    break
+
+            if swap_candidate:
+                print(f"    🔄 Swapping {full_name} ↔ {swap_candidate[0]} {swap_candidate[1]}")
+                groups[current_group].remove(thrower)
+                groups[current_group].append(swap_candidate)
+                groups[target_group].remove(swap_candidate)
+                groups[target_group].append(thrower)
+            else:
+                print(f"    ❌ No swap candidate found in Group {target_group + 1}, moving {full_name} directly")
+                groups[current_group].remove(thrower)
+                groups[target_group].append(thrower)
+
+    # === Final Group Print ===
     print("\n[DEBUG] Final Groups:")
     for i, group in enumerate(groups):
         group_display = []
@@ -225,6 +239,7 @@ def make_fair_competitive_groups(throwers_with_scores, num_groups=4):
         print(f"  Group {i + 1}: {group_display}")
 
     return groups
+
 
 
 
