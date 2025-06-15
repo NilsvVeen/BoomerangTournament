@@ -162,7 +162,7 @@ def make_fair_competitive_groups(throwers_with_scores, num_groups=4):
                 print(f"  Adding (Bottom) Rank {idx + 1:2}: {thrower[0]} {thrower[1]}")
                 groups[g].append(thrower)
 
-    # Track used indices
+    # === Step 1: Track used indices
     used_indices = set()
     for g in groups:
         for p in g:
@@ -170,14 +170,52 @@ def make_fair_competitive_groups(throwers_with_scores, num_groups=4):
                 if name == p:
                     used_indices.add(i)
 
+    # === Step 2: Leftovers
     leftovers = [sorted_throwers[i][1] for i in range(total) if i not in used_indices]
     print(f"\n[DEBUG] Leftovers ({len(leftovers)}): {[f'{t[0]} {t[1]}' for t in leftovers]}")
+
     for i, p in enumerate(leftovers):
         group_index = i % num_groups
         print(f"  Adding leftover: {p[0]} {p[1]} to Group {group_index + 1}")
         groups[group_index].append(p)
 
-    # Final group print
+    # === Step 3: Handle Restricted Groups
+    print("\n[DEBUG] Enforcing Restricted Groups:")
+    for tag, members in restricted_groups.items():
+        # Get all throwers in this restriction group
+        full_names = []
+        for item_id in members:
+            row_index = int(tree.item(item_id, "values")[0]) - 1
+            fn, ln, _, _ = throwers[row_index]
+            full_names.append(f"{fn} {ln}")
+
+        # Find where each is currently assigned
+        group_indices = {}
+        for name in full_names:
+            for i, group in enumerate(groups):
+                for t in group:
+                    if f"{t[0]} {t[1]}" == name:
+                        group_indices[name] = i
+                        break
+
+        # If already all in one group, skip
+        if len(set(group_indices.values())) <= 1:
+            print(f"  ✅ {', '.join(full_names)} already in Group {list(group_indices.values())[0] + 1}")
+            continue
+
+        # Otherwise, merge into the lowest-indexed group
+        target_group = max(group_indices.values())  # or min(), your choice
+        print(f"  ⚠️  Merging {', '.join(full_names)} into Group {target_group + 1}")
+
+        for name, group_idx in group_indices.items():
+            if group_idx == target_group:
+                continue  # already in right group
+            # Move to target group
+            t_obj = next(t for t in groups[group_idx] if f"{t[0]} {t[1]}" == name)
+            groups[group_idx].remove(t_obj)
+            groups[target_group].append(t_obj)
+
+    # === Step 4: Print Final Groups
     print("\n[DEBUG] Final Groups:")
     for i, group in enumerate(groups):
         group_display = []
@@ -187,6 +225,7 @@ def make_fair_competitive_groups(throwers_with_scores, num_groups=4):
         print(f"  Group {i + 1}: {group_display}")
 
     return groups
+
 
 
 # def make_fair_competitive_groups(throwers_with_scores, num_groups=4):
