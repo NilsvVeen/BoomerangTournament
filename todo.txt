@@ -1,7 +1,8 @@
-- include restrictions for seeding
+- include restrictions for seeding | Done: use seeding + swaps
 - include file paths for build
 - load/save for everything
 - make tabs different
 - clean up code and put in different files
 - make GUI fancy
-- 
+- if group small, add people to other groups
+- allow users to be swapped to a different group?
