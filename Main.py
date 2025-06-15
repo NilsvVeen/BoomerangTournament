@@ -107,7 +107,7 @@ def calculate_event_points(event, raw_score):
     max_values = {
         "Accuracy": 100,
         "Aussie Round": 100,
-        "MTA": 50,
+        "Maximum Time Aloft": 50,
         "Endurance": 80,
         "Trick Catch": 100
     }
