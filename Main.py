@@ -9,6 +9,30 @@ import os
 
 import random
 
+import requests
+from requests.auth import HTTPBasicAuth
+
+def post_to_wordpress(title, content):
+    username = 'scorebot_user'
+    app_password = 'ihWH tTOu EK2A PXFi ED8Q N9Fd'
+    site_url = 'https://boomerangsbynils.com/wp-json/wp/v2/posts'
+
+    post_data = {
+        "title": title,
+        "content": content,
+        "status": "publish"
+    }
+
+    response = requests.post(
+        site_url,
+        auth=HTTPBasicAuth(username, app_password),
+        json=post_data
+    )
+
+    if response.status_code == 201:
+        print("✅ Posted to WordPress:", response.json()['link'])
+    else:
+        print("❌ Failed to post:", response.status_code, response.text)
 
 # def make_fair_competitive_groups(throwers_with_scores, num_groups=4, block_size=5):
 #     sorted_throwers = sorted(throwers_with_scores, key=lambda x: -x[0])
@@ -1020,6 +1044,7 @@ def next_event_grouping():
 
 
 
+
 # Paste this helper function near your existing ones:
 def create_event_group_tab(event_name, thrower_list):
     group_tab = ttk.Frame(notebook)
@@ -1141,6 +1166,19 @@ def save_event_results(event):
 
     update_total_points_tab()
     messagebox.showinfo("Saved", f"{event} scores saved to {filename}")
+
+    # # ... after writing to file and updating scores
+    # summary_lines = [f"<h2>{event} Scores</h2><ul>"]
+    # for thrower in throwers:
+    #     full_name = f"{thrower[0]} {thrower[1]}"
+    #     entry = score_entries.get((event, full_name))
+    #     score = entry.get().strip() if entry else "0"
+    #     summary_lines.append(f"<li>{full_name}: {score}</li>")
+    # summary_lines.append("</ul>")
+    #
+    # # Post to WordPress
+    # post_to_wordpress(f"{event} Results", "\n".join(summary_lines))
+
 
 def create_score_tab(event):
     if event not in current_event_order:

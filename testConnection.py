@@ -2,6 +2,9 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 # Site and credentials
+# username = 'scorebot_user'
+# app_password = 'ihWH tTOu EK2A PXFi ED8Q N9Fd'
+# site_url = 'https://boomerangsbynils.com/wp-json/wp/v2/posts'  # correct endpoint
 username = ''
 app_password = ''
 site_url = ''  # correct endpoint
