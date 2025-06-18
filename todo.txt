@@ -13,14 +13,14 @@ Manu Feedback
 =====================================
 Tab throwers list
 
-1) Removing Restriction when there ist no restriction: throws index out of range exception:
+1) Removing Restriction when there ist no restriction: throws index out of range exception:  ✅Done: added check if at least one restriction
 
  File "C:\Users\Manuel\Desktop\BoomerangTournament-main\BoomerangTournament-main\Main.py", line 518, in remove_restriction
     group_tag = tree.item(selected_item)["tags"][0]
                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^
 IndexError: string index out of range
 
-2) Sometimes, when deleting the lowest thrower and then restrict the two last throwers, I get an error:
+2) Sometimes, when deleting the lowest thrower and then restrict the two last throwers, I get an error:        ✘ NOT DONE: Haven't been able to replicate this. I don't get the error, but when you remove one then load again, the couple will stay but it misses the throwres. do a check before. i.e.  https://gyazo.com/75e558ac44516a077ab301f8c6663a84
   File "C:\Users\Manuel\AppData\Local\Programs\Python\Python313\Lib\tkinter\ttk.py", line 288, in _val_or_dict
     res = tk.call(*(args + options))
 _tkinter.TclError: Item I04E not found
@@ -28,7 +28,7 @@ _tkinter.TclError: Item I04E not found
 after restarting main.py it works again.
 So probably an index is not updated afterdeleting a thrower?
 
-3) When I restrict two throwers, then delete one of the restricted throwers I get an index out of range again. 
+3) When I restrict two throwers, then delete one of the restricted throwers I get an index out of range again.        ✘ NOT DONE: Haven't been able to replicate this
 File "C:\Users\Manuel\Desktop\BoomerangTournament-main\BoomerangTournament-main\Main.py", line 518, in remove_restriction
     group_tag = tree.item(selected_item)["tags"][0]
                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^

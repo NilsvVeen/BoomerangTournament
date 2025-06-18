@@ -1,10 +1,10 @@
 Name,Score
-Hannah Davis,0
-Mike Martnez,0
+Hannah Davis,-1
+Mike Martnez,2
 Sophia Snchez,0
-Jacob Miller,0
-Samuel Miller,0
-Joshua Torres,0
+Jacob Miller,np
+Samuel Miller,"np,d"
+Joshua Torres,d
 James Brown,0
 Ava Lloyd,0
 Ethan Rivera,0
@@ -27,5 +27,3 @@ Zoe Prez,0
 David Moore,0
 Mason Lloyd,0
 1 1,0
-2 2,0
-3 3,0

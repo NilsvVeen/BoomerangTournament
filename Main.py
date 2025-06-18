@@ -227,20 +227,16 @@ def calculate_event_points(event, raw_score):
         try:
             raw_score = str(raw_score).strip().upper()
 
-            # Only "3C" or "3c" case
             if raw_score.endswith("C") and "/" not in raw_score:
                 catches = float(raw_score[:-1])
                 return calculate_fast_catch_points(time_taken=None, num_catches=catches)
 
-            # Handle "time/numC" or "time/num"
             parts = raw_score.replace("S", "").split("/")
             if len(parts) == 2:
                 time_taken = float(parts[0].strip())
-                catch_part = parts[1].strip().replace("C", "")
-                num_catches = float(catch_part)
+                num_catches = float(parts[1].strip().replace("C", ""))
                 return calculate_fast_catch_points(time_taken, num_catches)
 
-            # ✅ NEW: if it's a single number like "25", assume 5 catches
             if raw_score.replace('.', '', 1).isdigit():
                 time_taken = float(raw_score)
                 return calculate_fast_catch_points(time_taken, 5)
@@ -248,7 +244,6 @@ def calculate_event_points(event, raw_score):
         except:
             return 0
 
-    # All other events (log-based scoring with max)
     max_values = {
         "Accuracy": 100,
         "Aussie Round": 100,
@@ -259,8 +254,10 @@ def calculate_event_points(event, raw_score):
 
     try:
         score = float(raw_score)
+        if score < 0:
+            score = 0  # Clamp negative values to 0
     except:
-        return 0  # Non-numeric input
+        return 0
 
     max_val = max_values.get(event, 100)
     if score > max_val:
