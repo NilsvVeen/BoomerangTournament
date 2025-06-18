@@ -12,6 +12,9 @@ import random
 import requests
 from requests.auth import HTTPBasicAuth
 
+
+
+
 def post_to_wordpress(title, content):
     username = 'scorebot_user'
     app_password = 'ihWH tTOu EK2A PXFi ED8Q N9Fd'
@@ -33,6 +36,78 @@ def post_to_wordpress(title, content):
         print("✅ Posted to WordPress:", response.json()['link'])
     else:
         print("❌ Failed to post:", response.status_code, response.text)
+
+
+import re
+import requests
+from requests.auth import HTTPBasicAuth
+
+def update_tournament_page(tournament_slug, event_title, scores_html):
+    username = ''
+    app_password = ''
+    base_url = ''
+    auth = HTTPBasicAuth(username, app_password)
+
+    # 1. Get page by slug
+    response = requests.get(f"{base_url}?slug={tournament_slug}", auth=auth)
+    if response.status_code != 200:
+        print(f"❌ Failed to fetch pages: {response.status_code} {response.text}")
+        return
+
+    if response.json():
+        page = response.json()[0]
+        page_id = page['id']
+
+        # 2. Fetch raw content
+        detail = requests.get(f"{base_url}/{page_id}?context=edit", auth=auth)
+        if detail.status_code != 200:
+            print("❌ Could not fetch raw page content.")
+            return
+
+        raw_content = detail.json().get("content", {}).get("raw", "")
+
+        # 3. Build wrapped section
+        new_section = f"<!-- EVENT: {event_title} -->\n<h2>{event_title}</h2>\n{scores_html}\n<!-- END EVENT: {event_title} -->"
+
+        # 4. Replace or insert
+        pattern = rf"(?s)<!-- EVENT: {re.escape(event_title)} -->.*?<!-- END EVENT: {re.escape(event_title)} -->"
+        if re.search(pattern, raw_content):
+            updated_content = re.sub(pattern, new_section, raw_content)
+        else:
+            updated_content = raw_content.strip() + "\n\n" + new_section
+
+        # 5. Update page
+        update = requests.post(
+            f"{base_url}/{page_id}",
+            auth=auth,
+            json={"content": updated_content}
+        )
+
+        if update.status_code == 200:
+            print(f"✅ Updated event '{event_title}' in page '{tournament_slug}'.")
+        else:
+            print(f"❌ Failed to update page: {update.status_code} {update.text}")
+    else:
+        # Page doesn't exist — create it
+        print(f"⚠️ Creating new page for tournament '{tournament_slug}'...")
+
+        new_content = f"<h1>{tournament_slug.replace('-', ' ').title()}</h1>\n\n<!-- EVENT: {event_title} -->\n<h2>{event_title}</h2>\n{scores_html}\n<!-- END EVENT: {event_title} -->"
+        create = requests.post(
+            base_url,
+            auth=auth,
+            json={
+                "title": tournament_slug.replace('-', ' ').title(),
+                "slug": tournament_slug,
+                "status": "publish",
+                "content": new_content
+            }
+        )
+
+        if create.status_code == 201:
+            print(f"✅ Created new page '{tournament_slug}'.")
+        else:
+            print(f"❌ Failed to create page: {create.status_code} {create.text}")
+
 
 # def make_fair_competitive_groups(throwers_with_scores, num_groups=4, block_size=5):
 #     sorted_throwers = sorted(throwers_with_scores, key=lambda x: -x[0])
@@ -1167,17 +1242,18 @@ def save_event_results(event):
     update_total_points_tab()
     messagebox.showinfo("Saved", f"{event} scores saved to {filename}")
 
-    # # ... after writing to file and updating scores
-    # summary_lines = [f"<h2>{event} Scores</h2><ul>"]
-    # for thrower in throwers:
-    #     full_name = f"{thrower[0]} {thrower[1]}"
-    #     entry = score_entries.get((event, full_name))
-    #     score = entry.get().strip() if entry else "0"
-    #     summary_lines.append(f"<li>{full_name}: {score}</li>")
-    # summary_lines.append("</ul>")
+    # ... after writing to file and updating scores
+    summary_lines = [f"<h2>{event} Scores</h2><ul>"]
+    for thrower in throwers:
+        full_name = f"{thrower[0]} {thrower[1]}"
+        entry = score_entries.get((event, full_name))
+        score = entry.get().strip() if entry else "0"
+        summary_lines.append(f"<li>{full_name}: {score}</li>")
+    summary_lines.append("</ul>")
     #
     # # Post to WordPress
     # post_to_wordpress(f"{event} Results", "\n".join(summary_lines))
+    update_tournament_page("tournament-ebc2025-results", event, "\n".join(summary_lines))
 
 
 def create_score_tab(event):
