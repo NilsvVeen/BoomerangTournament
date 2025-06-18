@@ -40,30 +40,25 @@ def post_to_wordpress(title, content):
 
 def format_ranked_results(event_title, scores_dict):
     """
-    Returns HTML list with ranks based on event type.
-    For Fast Catch: lower scores are better.
-    For other events: higher scores are better.
+    Returns HTML <ul> with ranks.
+    Do NOT return the <h2> heading — that's handled in update_tournament_page.
     """
     is_fast_catch = event_title.lower() in ["fast catch", "fc"]
 
-    # Convert raw strings to sortable score
     def parse_score(score):
         if isinstance(score, str):
             s = score.strip().lower()
-            if s.endswith('c'):  # catches only (e.g., "3c")
+            if s.endswith('c'):  # catches only
                 try:
-                    return 1000 - int(s[:-1])  # invert for sorting: fewer catches = worse
+                    return 1000 - int(s[:-1])
                 except:
                     return float('inf')
-            elif '/' in s:  # time/catches
+            elif '/' in s:
                 try:
                     time, catches = s.replace("s", "").split("/")
                     time = float(time.strip())
                     catches = int(catches.strip().replace("c", ""))
-                    if catches >= 5:
-                        return time  # lower is better
-                    else:
-                        return 1000 - catches  # penalize partial catches
+                    return time if catches >= 5 else 1000 - catches
                 except:
                     return float('inf')
             else:
@@ -73,21 +68,17 @@ def format_ranked_results(event_title, scores_dict):
                     return float('inf')
         return float(score)
 
-    # Sorting logic
-    sortable = [
-        (parse_score(score), name, score)
-        for name, score in scores_dict.items()
-    ]
-    reverse = not is_fast_catch  # descending for all except Fast Catch
+    sortable = [(parse_score(score), name, score) for name, score in scores_dict.items()]
+    reverse = not is_fast_catch
     sortable.sort(reverse=reverse)
 
-    # Format HTML with ranks
-    lines = [f"<h2>{event_title} Scores</h2>", "<ul>"]
+    lines = ["<ul>"]
     for rank, (_, name, raw_score) in enumerate(sortable, start=1):
         lines.append(f"<li>{rank}. {name}: {raw_score}</li>")
     lines.append("</ul>")
 
     return "\n".join(lines)
+
 
 
 import re
