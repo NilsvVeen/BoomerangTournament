@@ -38,6 +38,58 @@ def post_to_wordpress(title, content):
         print("❌ Failed to post:", response.status_code, response.text)
 
 
+def format_ranked_results(event_title, scores_dict):
+    """
+    Returns HTML list with ranks based on event type.
+    For Fast Catch: lower scores are better.
+    For other events: higher scores are better.
+    """
+    is_fast_catch = event_title.lower() in ["fast catch", "fc"]
+
+    # Convert raw strings to sortable score
+    def parse_score(score):
+        if isinstance(score, str):
+            s = score.strip().lower()
+            if s.endswith('c'):  # catches only (e.g., "3c")
+                try:
+                    return 1000 - int(s[:-1])  # invert for sorting: fewer catches = worse
+                except:
+                    return float('inf')
+            elif '/' in s:  # time/catches
+                try:
+                    time, catches = s.replace("s", "").split("/")
+                    time = float(time.strip())
+                    catches = int(catches.strip().replace("c", ""))
+                    if catches >= 5:
+                        return time  # lower is better
+                    else:
+                        return 1000 - catches  # penalize partial catches
+                except:
+                    return float('inf')
+            else:
+                try:
+                    return float(s)
+                except:
+                    return float('inf')
+        return float(score)
+
+    # Sorting logic
+    sortable = [
+        (parse_score(score), name, score)
+        for name, score in scores_dict.items()
+    ]
+    reverse = not is_fast_catch  # descending for all except Fast Catch
+    sortable.sort(reverse=reverse)
+
+    # Format HTML with ranks
+    lines = [f"<h2>{event_title} Scores</h2>", "<ul>"]
+    for rank, (_, name, raw_score) in enumerate(sortable, start=1):
+        lines.append(f"<li>{rank}. {name}: {raw_score}</li>")
+    lines.append("</ul>")
+
+    return "\n".join(lines)
+
+
 import re
 import requests
 from requests.auth import HTTPBasicAuth
@@ -46,6 +98,9 @@ def update_tournament_page(tournament_slug, event_title, scores_html):
     username = ''
     app_password = ''
     base_url = ''
+    # username = ''
+    # app_password = ''
+    # base_url = ''
     auth = HTTPBasicAuth(username, app_password)
 
     # 1. Get page by slug
@@ -1242,18 +1297,22 @@ def save_event_results(event):
     update_total_points_tab()
     messagebox.showinfo("Saved", f"{event} scores saved to {filename}")
 
-    # ... after writing to file and updating scores
-    summary_lines = [f"<h2>{event} Scores</h2><ul>"]
+    # Collect scores
+    event_scores = {}
     for thrower in throwers:
         full_name = f"{thrower[0]} {thrower[1]}"
         entry = score_entries.get((event, full_name))
         score = entry.get().strip() if entry else "0"
-        summary_lines.append(f"<li>{full_name}: {score}</li>")
-    summary_lines.append("</ul>")
+        event_scores[full_name] = score
+
+    # Generate ranked HTML
+    summary_html = format_ranked_results(event, event_scores)
+    update_tournament_page("tournament-ebc2025-results", event, summary_html)
+
     #
     # # Post to WordPress
     # post_to_wordpress(f"{event} Results", "\n".join(summary_lines))
-    update_tournament_page("tournament-ebc2025-results", event, "\n".join(summary_lines))
+    # update_tournament_page("tournament-ebc2025-results", event, "\n".join(summary_lines))
 
 
 def create_score_tab(event):
