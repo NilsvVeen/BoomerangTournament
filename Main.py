@@ -655,25 +655,31 @@ def update_restrictions_file():
 
 
 
-# Function to remove selected restriction
 def remove_restriction():
     selected_item = tree.selection()
     if selected_item:
-        # Get the tag of the selected item
-        group_tag = tree.item(selected_item)["tags"][0]
-        # Remove the restriction from restricted_groups
-        print("GROUPS",  restricted_groups)
-        print("tag",  group_tag)
+        selected_item = selected_item[0]  # Always unpack tuple first
+        tags = tree.item(selected_item)["tags"]
+        if not tags:
+            messagebox.showinfo("No Restriction", "This thrower is not part of any restricted group.")
+            return
+
+        group_tag = tags[0]
         if group_tag in restricted_groups:
             del restricted_groups[group_tag]
-            # Remove the tag and reset the color
             tree.tag_configure(group_tag, background="", foreground="")
-            tree.item(selected_item, tags=())  # Clear the tag for the item
+            # Remove tag from all items in that group
+            for item in tree.get_children():
+                if group_tag in tree.item(item, "tags"):
+                    current_tags = list(tree.item(item, "tags"))
+                    current_tags.remove(group_tag)
+                    tree.item(item, tags=tuple(current_tags))
             update_restrictions_file()
         else:
             messagebox.showinfo("No Restriction", "This thrower is not part of any restricted group.")
     else:
         messagebox.showerror("Selection Error", "Please select a thrower to remove the restriction.")
+
 
 
 # GUI setup
