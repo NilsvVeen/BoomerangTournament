@@ -16,9 +16,12 @@ uploadingToWebsite = False # disabled for now avoid writing to website.
 
 
 def post_to_wordpress(title, content):
-    username = 'scorebot_user'
-    app_password = 'ihWH tTOu EK2A PXFi ED8Q N9Fd'
-    site_url = 'https://boomerangsbynils.com/wp-json/wp/v2/posts'
+    # username = 'scorebot_user'
+    # app_password = 'ihWH tTOu EK2A PXFi ED8Q N9Fd'
+    # site_url = 'https://boomerangsbynils.com/wp-json/wp/v2/posts'
+    username = ''
+    app_password = ''
+    site_url = ''
 
     post_data = {
         "title": title,
