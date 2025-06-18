@@ -37,7 +37,7 @@ IndexError: string index out of range
 =============================================
 Tab event order
 
-I created the score tabs, then entered np,d and -1 as Accuracy score. -1 resulted in -1000 points. Probably best is to restrict the possible scores to positive or zero values for numbers?
+I created the score tabs, then entered np,d and -1 as Accuracy score. -1 resulted in -1000 points. Probably best is to restrict the possible scores to positive or zero values for numbers? ✅Done: clamp negatives to >=0
 
 I hit "create score tabs" a second time and it created an additional complete list of scoring tabs. What a mess :-). No option to undo.
 Maybe better create the score tabs one event after another?
