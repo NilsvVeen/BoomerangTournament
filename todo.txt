@@ -7,6 +7,8 @@
 - if group small, add people to other groups
 - allow users to be swapped to a different group?
 - include tournament name field
+- when filling in one event. then add new events and fill in score, it won't reflect to the total points page and throw an error. Consider restricting the order!
+
 
 
 Manu Feedback
@@ -39,12 +41,12 @@ Tab event order
 
 I created the score tabs, then entered np,d and -1 as Accuracy score. -1 resulted in -1000 points. Probably best is to restrict the possible scores to positive or zero values for numbers? ✅Done: clamp negatives to >=0
 
-I hit "create score tabs" a second time and it created an additional complete list of scoring tabs. What a mess :-). No option to undo.
+I hit "create score tabs" a second time and it created an additional complete list of scoring tabs. What a mess :-). No option to undo.  ✅Done: keep track of added events.
 Maybe better create the score tabs one event after another?
 
-Move up/move down an event afterwards doesn't update the order of the created scoretabs. Would be nice.
+Move up/move down an event afterwards doesn't update the order of the created scoretabs. Would be nice. ✘ NOT DONE: Fix that later
 
-Removing a selected event doesn't delete the according scoretab which it should I think.
+Removing a selected event doesn't delete the according scoretab which it should I think. ✘ NOT DONE: Fix that later
 
 Nice to have in the scoretabs would be: Display the points (relative or position based). That would require an possibility to choose the official scoring system.
 
@@ -52,7 +54,7 @@ Total ranking is missing if I don't save the scores. That's planned I guess.
 
 I'm confused about the Group Generator(but that's not a "real thing" according to your description). That's supposed to be used only before the first event? When completing an event I can do "next event grouping" but haven't got the possibility to change the group size.
 
-Order within group: Usually, the best throwers compete last, not first.
+Order within group: Usually, the best throwers compete last, not first. ✅Done: Reverse groups and internally too
 
 By "Group" you probably mean "circle"? The number of circles may change from event to event.
 
