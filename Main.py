@@ -91,9 +91,9 @@ from requests.auth import HTTPBasicAuth
 def update_tournament_page(tournament_slug, event_title, scores_html):
     if uploadingToWebsite: # now just disable to avoid errors
 
-        # username = ''
-        # app_password = ''
-        # base_url = ''
+        username = ''
+        app_password = ''
+        base_url = ''
         auth = HTTPBasicAuth(username, app_password)
 
         # 1. Get page by slug
