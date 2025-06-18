@@ -371,6 +371,13 @@ def make_fair_competitive_groups(throwers_with_scores, num_groups=4):
                 groups[current_group].remove(thrower)
                 groups[target_group].append(thrower)
 
+    print("\nReverse group order to have best throwers in last group")
+    # Ensure best throwers compete last in each group
+    # Reverse group order so strongest group is last
+    groups.reverse()
+    for group in groups:
+        group.reverse()
+
     # === Final Group Print ===
     print("\n[DEBUG] Final Groups:")
     for i, group in enumerate(groups):
