@@ -1435,9 +1435,18 @@ def create_score_tab_for_first_event_and_summary():
     create_event_group_tab(first_event, throwers)
 
 
+added_score_tabs = set()  # global or module-level set
+
 def create_all_score_tabs():
     for event in current_event_order:
-        create_score_tab(event)
+        if event not in added_score_tabs:
+            create_score_tab(event)
+            added_score_tabs.add(event)
+            print(f"Added tab for event: {event}")
+        else:
+            print(f"Tab already exists for event: {event}")
+
+
 
 score_tab_button = tk.Button(control_frame, text="Create Score Tabs", command=create_all_score_tabs)
 score_tab_button.grid(row=0, column=3, padx=10)
