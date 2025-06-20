@@ -1,7 +1,7 @@
 - include restrictions for seeding | ✅Done: use seeding + swaps
 - include file paths for build
 - load/save for everything
-- make tabs different
+- make tabs different ✅Done: now subtabs
 - clean up code and put in different files
 - make GUI fancy
 - if group small, add people to other groups
@@ -49,17 +49,17 @@ Move up/move down an event afterwards doesn't update the order of the created sc
 
 Removing a selected event doesn't delete the according scoretab which it should I think. ✘ NOT DONE: Fix that later
 
-Nice to have in the scoretabs would be: Display the points (relative or position based). That would require an possibility to choose the official scoring system.
+Nice to have in the scoretabs would be: Display the points (relative or position based). That would require an possibility to choose the official scoring system. ✘ NOT DONE: Add in later version
 
-Total ranking is missing if I don't save the scores. That's planned I guess.
+Total ranking is missing if I don't save the scores. That's planned I guess. ✘ NOT DONE: But don't think it should be changed. ✅Done
 
-I'm confused about the Group Generator(but that's not a "real thing" according to your description). That's supposed to be used only before the first event? When completing an event I can do "next event grouping" but haven't got the possibility to change the group size.
+I'm confused about the Group Generator(but that's not a "real thing" according to your description). That's supposed to be used only before the first event? When completing an event I can do "next event grouping" but haven't got the possibility to change the group size. ✅Done: Removed this all together.
 
 Order within group: Usually, the best throwers compete last, not first. ✅Done: Reverse groups and internally too
 
 By "Group" you probably mean "circle"? The number of circles may change from event to event. ✅Done
 
-My basic idea was:
+My basic idea was:   ✘ Mostly done. Needs an update
 1. ‎How many circles are in use? Let's say 3 ✅Done
 2. How many throwers? Lets say 23 ✅Done
 3. Then we have 3x7+2 (split in two halves foreach circle).
