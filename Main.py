@@ -1204,17 +1204,11 @@ def update_total_points_tab():
 
 
 def next_event_grouping():
-    try:
-        group_size = int(group_size_entry.get())
-        if group_size <= 0:
-            raise ValueError
-    except:
-        messagebox.showerror("Input Error", "Please enter a valid integer group size first.")
-        return
-
     # Step 1: Get the current event from the selected tab
-    current_tab_index = notebook.index(notebook.select())
-    current_event = notebook.tab(current_tab_index, "text")
+    current_tab_index = scores_notebook.index(scores_notebook.select())
+    current_event = scores_notebook.tab(current_tab_index, "text")
+
+    print("Events:", current_event, "- ", current_event);
 
     if current_event not in current_event_order:
         messagebox.showerror("Invalid Tab", "Please select a valid event tab.")
@@ -1242,18 +1236,19 @@ def next_event_grouping():
     num_groups = event_circle_counts.get(next_event, 3)
     fair_groups = make_fair_competitive_groups(thrower_scores, num_groups)
 
-    # Step 5: Remove existing "[Next Event] Groups" tab if it exists
+    # Step 5: Remove existing "[Next Event] Circles" tab if it exists
     next_tab_title = f"{next_event} Circles"
-    for i in range(len(notebook.tabs())):
-        if notebook.tab(i, "text") == next_tab_title:
-            notebook.forget(i)
+    for i in range(len(circles_notebook.tabs())):
+        if circles_notebook.tab(i, "text") == next_tab_title:
+            circles_notebook.forget(i)
             break
 
-    # Step 6: Flatten the grouped list and create the next event's group tab
+    # Step 6: Flatten and create new tab
     flat_throwers = [t for group in fair_groups for t in group]
     create_event_group_tab(next_event, flat_throwers)
 
     messagebox.showinfo("Circles Generated", f"Circles for '{next_event}' created based on updated scores.")
+
 
 
 
