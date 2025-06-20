@@ -929,19 +929,7 @@ def are_restricted(t1, t2):
 # balanced_button = tk.Button(group_frame, text="Generate Balanced Groups", command=generate_balanced_groups)
 # balanced_button.grid(row=0, column=3, padx=10)
 
-# Top-level tabs
-scores_main_tab = ttk.Frame(notebook)
-circles_main_tab = ttk.Frame(notebook)
 
-notebook.add(scores_main_tab, text="Scores")
-notebook.add(circles_main_tab, text="Circles")
-
-# Sub-notebooks for event-specific tabs
-scores_notebook = ttk.Notebook(scores_main_tab)
-scores_notebook.pack(fill="both", expand=True)
-
-circles_notebook = ttk.Notebook(circles_main_tab)
-circles_notebook.pack(fill="both", expand=True)
 
 
 
@@ -1138,6 +1126,19 @@ tk.Button(control_frame, text="Save Order", command=save_event_order).grid(row=0
 refresh_event_listboxes()
 
 
+# Top-level tabs
+scores_main_tab = ttk.Frame(notebook)
+circles_main_tab = ttk.Frame(notebook)
+
+notebook.add(scores_main_tab, text="Scores")
+notebook.add(circles_main_tab, text="Circles")
+
+# Sub-notebooks for event-specific tabs
+scores_notebook = ttk.Notebook(scores_main_tab)
+scores_notebook.pack(fill="both", expand=True)
+
+circles_notebook = ttk.Notebook(circles_main_tab)
+circles_notebook.pack(fill="both", expand=True)
 
 
 def update_total_points_tab():
