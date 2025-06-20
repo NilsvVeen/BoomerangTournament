@@ -929,6 +929,21 @@ def are_restricted(t1, t2):
 # balanced_button = tk.Button(group_frame, text="Generate Balanced Groups", command=generate_balanced_groups)
 # balanced_button.grid(row=0, column=3, padx=10)
 
+# Top-level tabs
+scores_main_tab = ttk.Frame(notebook)
+circles_main_tab = ttk.Frame(notebook)
+
+notebook.add(scores_main_tab, text="Scores")
+notebook.add(circles_main_tab, text="Circles")
+
+# Sub-notebooks for event-specific tabs
+scores_notebook = ttk.Notebook(scores_main_tab)
+scores_notebook.pack(fill="both", expand=True)
+
+circles_notebook = ttk.Notebook(circles_main_tab)
+circles_notebook.pack(fill="both", expand=True)
+
+
 
 
 # === Event Order Tab ===
@@ -1244,8 +1259,8 @@ def next_event_grouping():
 
 
 def create_event_group_tab(event_name, thrower_list):
-    group_tab = ttk.Frame(notebook)
-    notebook.add(group_tab, text=f"{event_name} Circles")
+    group_tab = ttk.Frame(circles_notebook)
+    circles_notebook.add(group_tab, text=f"{event_name} Circles")
 
     tree = ttk.Treeview(group_tab, columns=("Circle", "First Name", "Last Name", "Nationality", "Category"), show="headings")
     for col in tree["columns"]:
@@ -1254,9 +1269,9 @@ def create_event_group_tab(event_name, thrower_list):
 
     # Get number of circles for this event
     num_circles = event_circle_counts.get(event_name, 3)
-    num_circles = max(1, num_circles)  # Ensure at least 1 circle
+    num_circles = max(1, num_circles)
 
-    # Distribute throwers as evenly as possible over num_circles
+    # Distribute throwers evenly over num_circles
     groups = [[] for _ in range(num_circles)]
     for i, thrower in enumerate(thrower_list):
         group_index = i % num_circles
@@ -1265,6 +1280,7 @@ def create_event_group_tab(event_name, thrower_list):
     for i, group in enumerate(groups, start=1):
         for thrower in group:
             tree.insert("", "end", values=(f"Circle {i}", *thrower))
+
 
 
 # Modify save_accuracy_results to add the next event's score tab and group tab
@@ -1391,8 +1407,8 @@ def create_score_tab(event):
     if event not in current_event_order:
         return
 
-    event_tab = ttk.Frame(notebook)
-    notebook.add(event_tab, text=event)
+    event_tab = ttk.Frame(scores_notebook)  # use the Scores sub-notebook
+    scores_notebook.add(event_tab, text=event)
 
     canvas = tk.Canvas(event_tab)
     scrollbar = ttk.Scrollbar(event_tab, orient="vertical", command=canvas.yview)
@@ -1414,7 +1430,6 @@ def create_score_tab(event):
         entry.grid(row=i + 1, column=1, padx=10, pady=2)
         score_entries[(event, full_name)] = entry
 
-    # Buttons for the event tab
     button_bar = tk.Frame(scrollable_frame)
     button_bar.grid(row=len(throwers) + 2, column=0, columnspan=2, pady=10)
 
@@ -1425,6 +1440,7 @@ def create_score_tab(event):
     next_group_btn.pack(side="left", padx=10)
 
     create_event_group_tab(event, throwers)
+
 
 def create_score_tab_for_first_event_and_summary():
     if not current_event_order:
