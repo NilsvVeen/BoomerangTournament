@@ -13,6 +13,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 uploadingToWebsite = False # disabled for now avoid writing to website.
+event_circle_counts = {}  # e.g., {"Accuracy": 3, "Fast Catch": 2}
 
 
 def post_to_wordpress(title, content):
@@ -930,133 +931,199 @@ balanced_button.grid(row=0, column=3, padx=10)
 
 
 
-#
-#
-#
 # === Event Order Tab ===
-event_list = ["Accuracy", "Fast Catch", "Endurance", "Maximum Time Aloft", "Trick Catch", "Aussie Round 50"]
+import os
 
-# Dropdown options for adding events
-additional_events = \
-    ["Accuracy", "Fast Catch", "Endurance", "Maximum Time Aloft", "Trick Catch", "Trick Catch 50", "Aussie Round 30", "Aussie Round 40", "Aussie Round 50",
-     "Long Distance"]
+# State storage
+current_event_order = []
+event_circle_counts = {}
+selected_event_index = None
+circle_entries = []
 
-# Current order (copy of initial list)
-current_event_order = event_list.copy()
+# Load from file
+if os.path.exists("input/event_order.txt"):
+    with open("input/event_order.txt", "r", encoding="utf-8") as f:
+        for line in f:
+            parts = line.strip().split("|")
+            if len(parts) == 2:
+                event, circles = parts
+                current_event_order.append(event)
+                event_circle_counts[event] = int(circles)
+            else:
+                event = parts[0]
+                current_event_order.append(event)
+                event_circle_counts[event] = 3
+else:
+    current_event_order = [
+        "Accuracy", "Fast Catch", "Endurance", "Maximum Time Aloft",
+        "Trick Catch", "Aussie Round 50"
+    ]
+    event_circle_counts = {e: 3 for e in current_event_order}
 
+additional_events = [
+    "Accuracy", "Fast Catch", "Endurance", "Maximum Time Aloft", "Trick Catch",
+    "Trick Catch 50", "Aussie Round 30", "Aussie Round 40", "Aussie Round 50",
+    "Long Distance"
+]
+
+# Create tab
 event_order_tab = ttk.Frame(notebook)
 notebook.add(event_order_tab, text="Event Order")
 
 event_frame = tk.Frame(event_order_tab)
 event_frame.pack(pady=10)
 
-# Number listbox (left column)
-event_number_listbox = tk.Listbox(event_frame, height=10, width=4, font=("Helvetica", 12), exportselection=False)
-event_number_listbox.grid(row=0, column=0, rowspan=6, sticky="ns", padx=(10, 0))
+# Header row
+tk.Label(event_frame, text="#", font=("Helvetica", 12, "bold")).grid(row=0, column=0, padx=10)
+tk.Label(event_frame, text="Event", font=("Helvetica", 12, "bold")).grid(row=0, column=1, padx=10)
+tk.Label(event_frame, text="Circles", font=("Helvetica", 12, "bold")).grid(row=0, column=2, padx=10)
 
-# Event name listbox (right column)
-event_listbox = tk.Listbox(event_frame, height=10, width=30, font=("Helvetica", 12), exportselection=False)
-event_listbox.grid(row=0, column=1, rowspan=6, sticky="ns")
+def on_event_row_click(index):
+    global selected_event_index
+    selected_event_index = index
+    refresh_event_listboxes()
 
-
-# === Utility ===
 def refresh_event_listboxes():
-    event_number_listbox.delete(0, tk.END)
-    event_listbox.delete(0, tk.END)
-    for idx, event in enumerate(current_event_order, start=1):
-        event_number_listbox.insert(tk.END, str(idx))
-        event_listbox.insert(tk.END, event)
+    global selected_event_index
+    for widget in event_frame.grid_slaves():
+        if int(widget.grid_info()["row"]) > 0:
+            widget.destroy()
+    circle_entries.clear()
 
+    for idx, event in enumerate(current_event_order):
+        # Row number
+        tk.Label(event_frame, text=str(idx + 1), font=("Helvetica", 11)).grid(
+            row=idx + 1, column=0, padx=10, pady=2, sticky="w"
+        )
 
-# === Add / Remove Event ===
+        # Event name (clickable)
+        label = tk.Label(event_frame, text=event, font=("Helvetica", 11),
+                         width=25, anchor="w", bg="white")
+        if selected_event_index == idx:
+            label.config(bg="#d0ebff")  # Highlight selected
+        label.grid(row=idx + 1, column=1, padx=10, pady=2, sticky="w")
+        label.bind("<Button-1>", lambda e, i=idx: on_event_row_click(i))
+
+        # Circle count entry
+        entry = tk.Entry(event_frame, width=5, font=("Helvetica", 11))
+        entry.insert(0, str(event_circle_counts.get(event, 3)))
+        entry.grid(row=idx + 1, column=2, padx=10, pady=2, sticky="w")
+        circle_entries.append(entry)
+
+# === Add / Remove ===
 add_frame = tk.Frame(event_order_tab)
 add_frame.pack(pady=(5, 0))
 
 event_var = tk.StringVar(value=additional_events[0])
-event_dropdown = ttk.Combobox(add_frame, textvariable=event_var, values=additional_events, state="readonly", width=25)
+event_dropdown = ttk.Combobox(add_frame, textvariable=event_var,
+                              values=additional_events, state="readonly", width=25)
 event_dropdown.grid(row=0, column=0, padx=5)
 
 def add_event():
     new_event = event_var.get()
     if new_event not in current_event_order:
         current_event_order.append(new_event)
+        event_circle_counts[new_event] = 3
         refresh_event_listboxes()
     else:
         messagebox.showinfo("Duplicate", f"{new_event} is already in the list.")
 
-add_event_button = tk.Button(add_frame, text="Add Event", command=add_event)
-add_event_button.grid(row=0, column=1, padx=5)
+tk.Button(add_frame, text="Add Event", command=add_event).grid(row=0, column=1, padx=5)
 
 def remove_event():
-    selected = event_listbox.curselection()
-    if selected:
-        index = selected[0]
-        del current_event_order[index]
+    global selected_event_index
+    if selected_event_index is not None:
+        removed_event = current_event_order.pop(selected_event_index)
+        event_circle_counts.pop(removed_event, None)
+        selected_event_index = None
         refresh_event_listboxes()
     else:
-        messagebox.showerror("Selection Error", "Select an event to remove.")
+        messagebox.showerror("Select Row", "Click on an event row to select it before removing.")
 
-remove_button = tk.Button(add_frame, text="Remove Selected Event", command=remove_event)
-remove_button.grid(row=0, column=2, padx=5)
-
+tk.Button(add_frame, text="Remove Selected", command=remove_event).grid(row=0, column=2, padx=5)
 
 # === Move / Save ===
 control_frame = tk.Frame(event_order_tab)
 control_frame.pack(pady=5)
 
 def move_event_up():
-    selected = event_listbox.curselection()
-    if not selected or selected[0] == 0:
+    global selected_event_index
+    if selected_event_index is None or selected_event_index == 0:
         return
-    i = selected[0]
-    current_event_order[i], current_event_order[i - 1] = current_event_order[i - 1], current_event_order[i]
+
+    i = selected_event_index
+
+    # Capture current circle values
+    circles = []
+    for entry in circle_entries:
+        try:
+            val = int(entry.get())
+        except ValueError:
+            val = 3
+        circles.append(val)
+
+    # Swap events and circle values
+    current_event_order[i - 1], current_event_order[i] = current_event_order[i], current_event_order[i - 1]
+    circles[i - 1], circles[i] = circles[i], circles[i - 1]
+
+    # Update event_circle_counts
+    for idx, event in enumerate(current_event_order):
+        event_circle_counts[event] = circles[idx]
+
+    selected_event_index -= 1
     refresh_event_listboxes()
-    event_listbox.select_set(i - 1)
-    event_number_listbox.select_set(i - 1)
+
 
 def move_event_down():
-    selected = event_listbox.curselection()
-    if not selected or selected[0] == len(current_event_order) - 1:
+    global selected_event_index
+    if selected_event_index is None or selected_event_index >= len(current_event_order) - 1:
         return
-    i = selected[0]
+
+    i = selected_event_index
+
+    # Capture current circle values
+    circles = []
+    for entry in circle_entries:
+        try:
+            val = int(entry.get())
+        except ValueError:
+            val = 3
+        circles.append(val)
+
+    # Swap events and circle values
     current_event_order[i], current_event_order[i + 1] = current_event_order[i + 1], current_event_order[i]
+    circles[i], circles[i + 1] = circles[i + 1], circles[i]
+
+    # Update event_circle_counts
+    for idx, event in enumerate(current_event_order):
+        event_circle_counts[event] = circles[idx]
+
+    selected_event_index += 1
     refresh_event_listboxes()
-    event_listbox.select_set(i + 1)
-    event_number_listbox.select_set(i + 1)
+
 
 def save_event_order():
+    for i, event in enumerate(current_event_order):
+        try:
+            circles = int(circle_entries[i].get())
+        except ValueError:
+            circles = 3
+        event_circle_counts[event] = circles
+
     with open("input/event_order.txt", "w", encoding="utf-8") as f:
         for event in current_event_order:
-            f.write(event + "\n")
+            f.write(f"{event}|{event_circle_counts[event]}\n")
+
     messagebox.showinfo("Saved", "Event order saved to input/event_order.txt")
 
-up_button = tk.Button(control_frame, text="Move Up", command=move_event_up)
-up_button.grid(row=0, column=0, padx=10)
-
-down_button = tk.Button(control_frame, text="Move Down", command=move_event_down)
-down_button.grid(row=0, column=1, padx=10)
-
-save_button = tk.Button(control_frame, text="Save Order", command=save_event_order)
-save_button.grid(row=0, column=2, padx=10)
-
-
-# === Selection Syncing ===
-def on_event_select(event):
-    index = event_listbox.curselection()
-    if index:
-        event_number_listbox.select_clear(0, tk.END)
-        event_number_listbox.select_set(index[0])
-
-def on_number_select(event):
-    index = event_number_listbox.curselection()
-    if index:
-        event_listbox.select_clear(0, tk.END)
-        event_listbox.select_set(index[0])
-
-event_listbox.bind("<<ListboxSelect>>", on_event_select)
-event_number_listbox.bind("<<ListboxSelect>>", on_number_select)
+tk.Button(control_frame, text="Move Up", command=move_event_up).grid(row=0, column=0, padx=10)
+tk.Button(control_frame, text="Move Down", command=move_event_down).grid(row=0, column=1, padx=10)
+tk.Button(control_frame, text="Save Order", command=save_event_order).grid(row=0, column=2, padx=10)
 
 refresh_event_listboxes()
+
+
+
 
 def update_total_points_tab():
     # Find and clear the existing Total Points tab
@@ -1156,11 +1223,11 @@ def next_event_grouping():
         thrower_scores.append((total, thrower))
 
     thrower_scores.sort(reverse=True, key=lambda x: x[0])
-    num_groups = (len(throwers) + group_size - 1) // group_size
+    num_groups = event_circle_counts.get(next_event, 3)
     fair_groups = make_fair_competitive_groups(thrower_scores, num_groups)
 
     # Step 5: Remove existing "[Next Event] Groups" tab if it exists
-    next_tab_title = f"{next_event} Groups"
+    next_tab_title = f"{next_event} Circles"
     for i in range(len(notebook.tabs())):
         if notebook.tab(i, "text") == next_tab_title:
             notebook.forget(i)
@@ -1170,7 +1237,7 @@ def next_event_grouping():
     flat_throwers = [t for group in fair_groups for t in group]
     create_event_group_tab(next_event, flat_throwers)
 
-    messagebox.showinfo("Groups Generated", f"Groups for '{next_event}' created based on updated scores.")
+    messagebox.showinfo("Circles Generated", f"Circles for '{next_event}' created based on updated scores.")
 
 
 
@@ -1179,9 +1246,9 @@ def next_event_grouping():
 # Paste this helper function near your existing ones:
 def create_event_group_tab(event_name, thrower_list):
     group_tab = ttk.Frame(notebook)
-    notebook.add(group_tab, text=f"{event_name} Groups")
+    notebook.add(group_tab, text=f"{event_name} Circles")
 
-    tree = ttk.Treeview(group_tab, columns=("Group", "First Name", "Last Name", "Nationality", "Category"), show="headings")
+    tree = ttk.Treeview(group_tab, columns=("Circle", "First Name", "Last Name", "Nationality", "Category"), show="headings")
     for col in tree["columns"]:
         tree.heading(col, text=col)
     tree.pack(fill="both", expand=True, padx=10, pady=10)
