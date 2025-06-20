@@ -762,24 +762,24 @@ remove_restriction_button.grid(row=1, column=0, padx=10)
 tree.bind("<ButtonRelease-1>", lambda event: tree.selection())
 
 
-# === Create Groups Tab ===
-groups_tab = ttk.Frame(notebook)
-notebook.add(groups_tab, text="Group Generator")
-
-group_frame = tk.Frame(groups_tab)
-group_frame.pack(pady=10)
-
-# Input: Desired group size
-tk.Label(group_frame, text="Group Size:").grid(row=0, column=0, padx=5)
-group_size_entry = tk.Entry(group_frame)
-group_size_entry.grid(row=0, column=1, padx=5)
-
-# Treeview to display groups
-groups_tree = ttk.Treeview(groups_tab, columns=("Group", "First Name", "Last Name", "Nationality", "Category"),
-                           show="headings", height=15)
-for col in ("Group", "First Name", "Last Name", "Nationality", "Category"):
-    groups_tree.heading(col, text=col)
-groups_tree.pack(fill="both", expand=True, padx=10, pady=10)
+# # === Create Groups Tab ===
+# groups_tab = ttk.Frame(notebook)
+# notebook.add(groups_tab, text="Group Generator")
+#
+# group_frame = tk.Frame(groups_tab)
+# group_frame.pack(pady=10)
+#
+# # Input: Desired group size
+# tk.Label(group_frame, text="Group Size:").grid(row=0, column=0, padx=5)
+# group_size_entry = tk.Entry(group_frame)
+# group_size_entry.grid(row=0, column=1, padx=5)
+#
+# # Treeview to display groups
+# groups_tree = ttk.Treeview(groups_tab, columns=("Group", "First Name", "Last Name", "Nationality", "Category"),
+#                            show="headings", height=15)
+# for col in ("Group", "First Name", "Last Name", "Nationality", "Category"):
+#     groups_tree.heading(col, text=col)
+# groups_tree.pack(fill="both", expand=True, padx=10, pady=10)
 
 
 # === Helper: Check if two throwers are restricted ===
@@ -796,138 +796,138 @@ def are_restricted(t1, t2):
             return True
     return False
 
-def generate_balanced_groups():
-    try:
-        group_size = int(group_size_entry.get())
-        if group_size <= 0:
-            raise ValueError
-
-        for item in groups_tree.get_children():
-            groups_tree.delete(item)
-
-        # Step 1: Build restricted units
-        restricted_units = []
-        used_indices = set()
-        for group in restricted_groups.values():
-            unit = []
-            for item in group:
-                row_index = int(tree.item(item, "values")[0]) - 1
-                if row_index not in used_indices:
-                    unit.append(throwers[row_index])
-                    used_indices.add(row_index)
-            if unit:
-                restricted_units.append(unit)
-
-        # Step 2: Group remaining throwers by category
-        categories = {}
-        for i, thrower in enumerate(throwers):
-            if i in used_indices:
-                continue
-            category = thrower[3].lower()
-            if category not in categories:
-                categories[category] = []
-            categories[category].append(thrower)
-
-        # Step 3: Sort categories into tiers (assuming stronger throwers come first alphabetically)
-        sorted_cats = sorted(categories.items(), key=lambda x: x[0])
-        sorted_throwers = []
-        for _, tlist in sorted_cats:
-            random.shuffle(tlist)
-            sorted_throwers.extend(tlist)
-
-        # Convert single throwers to 1-element units
-        unrestricted_units = [[t] for t in sorted_throwers]
-        all_units = restricted_units + unrestricted_units
-
-        # Step 4: Distribute units into groups round-robin
-        num_groups = (len(throwers) + group_size - 1) // group_size
-        groups = [[] for _ in range(num_groups)]
-
-        i = 0
-        for unit in all_units:
-            # Find next group with enough space
-            assigned = False
-            for _ in range(num_groups):
-                if len(groups[i]) + len(unit) <= group_size:
-                    groups[i].extend(unit)
-                    assigned = True
-                    break
-                i = (i + 1) % num_groups
-            if not assigned:
-                # If all groups are full, make a new one
-                groups.append(unit)
-            i = (i + 1) % len(groups)
-
-        # Step 5: Display groups
-        for group_num, group in enumerate(groups, start=1):
-            for thrower in group:
-                groups_tree.insert("", "end", values=(f"Group {group_num}", *thrower))
-
-    except ValueError:
-        messagebox.showerror("Input Error", "Please enter a valid integer group size.")
-
-
-def generate_groups():
-    try:
-        group_size = int(group_size_entry.get())
-        if group_size <= 0:
-            raise ValueError
-
-        # Clear previous output
-        for item in groups_tree.get_children():
-            groups_tree.delete(item)
-
-        # Step 1: Build restricted groups as units
-        restricted_units = []
-        used_indices = set()
-
-        for group in restricted_groups.values():
-            unit = []
-            for item in group:
-                row_index = int(tree.item(item, "values")[0]) - 1
-                if row_index not in used_indices:
-                    unit.append(throwers[row_index])
-                    used_indices.add(row_index)
-            if unit:
-                restricted_units.append(unit)
-
-        # Step 2: Add the remaining (non-restricted) throwers as individual units
-        unrestricted_units = [
-            [thrower] for i, thrower in enumerate(throwers) if i not in used_indices
-        ]
-
-        all_units = restricted_units + unrestricted_units
-        random.shuffle(all_units)
-
-        # Step 3: Form groups using units
-        groups = []
-        current_group = []
-        for unit in all_units:
-            if len(current_group) + len(unit) > group_size:
-                if current_group:
-                    groups.append(current_group)
-                current_group = []
-
-            current_group.extend(unit)
-
-        if current_group:
-            groups.append(current_group)
-
-        # Step 4: Display results
-        for group_num, group in enumerate(groups, start=1):
-            for thrower in group:
-                groups_tree.insert("", "end", values=(f"Group {group_num}", *thrower))
-
-    except ValueError:
-        messagebox.showerror("Input Error", "Please enter a valid integer group size.")
-
-
-# Button to trigger group generation
-generate_button = tk.Button(group_frame, text="Generate Groups", command=generate_groups)
-generate_button.grid(row=0, column=2, padx=10)
-
-balanced_button = tk.Button(group_frame, text="Generate Balanced Groups", command=generate_balanced_groups)
-balanced_button.grid(row=0, column=3, padx=10)
+# def generate_balanced_groups():
+#     try:
+#         group_size = int(group_size_entry.get())
+#         if group_size <= 0:
+#             raise ValueError
+#
+#         for item in groups_tree.get_children():
+#             groups_tree.delete(item)
+#
+#         # Step 1: Build restricted units
+#         restricted_units = []
+#         used_indices = set()
+#         for group in restricted_groups.values():
+#             unit = []
+#             for item in group:
+#                 row_index = int(tree.item(item, "values")[0]) - 1
+#                 if row_index not in used_indices:
+#                     unit.append(throwers[row_index])
+#                     used_indices.add(row_index)
+#             if unit:
+#                 restricted_units.append(unit)
+#
+#         # Step 2: Group remaining throwers by category
+#         categories = {}
+#         for i, thrower in enumerate(throwers):
+#             if i in used_indices:
+#                 continue
+#             category = thrower[3].lower()
+#             if category not in categories:
+#                 categories[category] = []
+#             categories[category].append(thrower)
+#
+#         # Step 3: Sort categories into tiers (assuming stronger throwers come first alphabetically)
+#         sorted_cats = sorted(categories.items(), key=lambda x: x[0])
+#         sorted_throwers = []
+#         for _, tlist in sorted_cats:
+#             random.shuffle(tlist)
+#             sorted_throwers.extend(tlist)
+#
+#         # Convert single throwers to 1-element units
+#         unrestricted_units = [[t] for t in sorted_throwers]
+#         all_units = restricted_units + unrestricted_units
+#
+#         # Step 4: Distribute units into groups round-robin
+#         num_groups = (len(throwers) + group_size - 1) // group_size
+#         groups = [[] for _ in range(num_groups)]
+#
+#         i = 0
+#         for unit in all_units:
+#             # Find next group with enough space
+#             assigned = False
+#             for _ in range(num_groups):
+#                 if len(groups[i]) + len(unit) <= group_size:
+#                     groups[i].extend(unit)
+#                     assigned = True
+#                     break
+#                 i = (i + 1) % num_groups
+#             if not assigned:
+#                 # If all groups are full, make a new one
+#                 groups.append(unit)
+#             i = (i + 1) % len(groups)
+#
+#         # Step 5: Display groups
+#         for group_num, group in enumerate(groups, start=1):
+#             for thrower in group:
+#                 groups_tree.insert("", "end", values=(f"Group {group_num}", *thrower))
+#
+#     except ValueError:
+#         messagebox.showerror("Input Error", "Please enter a valid integer group size.")
+#
+#
+# def generate_groups():
+#     try:
+#         group_size = int(group_size_entry.get())
+#         if group_size <= 0:
+#             raise ValueError
+#
+#         # Clear previous output
+#         for item in groups_tree.get_children():
+#             groups_tree.delete(item)
+#
+#         # Step 1: Build restricted groups as units
+#         restricted_units = []
+#         used_indices = set()
+#
+#         for group in restricted_groups.values():
+#             unit = []
+#             for item in group:
+#                 row_index = int(tree.item(item, "values")[0]) - 1
+#                 if row_index not in used_indices:
+#                     unit.append(throwers[row_index])
+#                     used_indices.add(row_index)
+#             if unit:
+#                 restricted_units.append(unit)
+#
+#         # Step 2: Add the remaining (non-restricted) throwers as individual units
+#         unrestricted_units = [
+#             [thrower] for i, thrower in enumerate(throwers) if i not in used_indices
+#         ]
+#
+#         all_units = restricted_units + unrestricted_units
+#         random.shuffle(all_units)
+#
+#         # Step 3: Form groups using units
+#         groups = []
+#         current_group = []
+#         for unit in all_units:
+#             if len(current_group) + len(unit) > group_size:
+#                 if current_group:
+#                     groups.append(current_group)
+#                 current_group = []
+#
+#             current_group.extend(unit)
+#
+#         if current_group:
+#             groups.append(current_group)
+#
+#         # Step 4: Display results
+#         for group_num, group in enumerate(groups, start=1):
+#             for thrower in group:
+#                 groups_tree.insert("", "end", values=(f"Group {group_num}", *thrower))
+#
+#     except ValueError:
+#         messagebox.showerror("Input Error", "Please enter a valid integer group size.")
+#
+#
+# # Button to trigger group generation
+# generate_button = tk.Button(group_frame, text="Generate Groups", command=generate_groups)
+# generate_button.grid(row=0, column=2, padx=10)
+#
+# balanced_button = tk.Button(group_frame, text="Generate Balanced Groups", command=generate_balanced_groups)
+# balanced_button.grid(row=0, column=3, padx=10)
 
 
 
