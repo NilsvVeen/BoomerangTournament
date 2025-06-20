@@ -1243,7 +1243,6 @@ def next_event_grouping():
 
 
 
-# Paste this helper function near your existing ones:
 def create_event_group_tab(event_name, thrower_list):
     group_tab = ttk.Frame(notebook)
     notebook.add(group_tab, text=f"{event_name} Circles")
@@ -1253,15 +1252,20 @@ def create_event_group_tab(event_name, thrower_list):
         tree.heading(col, text=col)
     tree.pack(fill="both", expand=True, padx=10, pady=10)
 
-    try:
-        group_size = int(group_size_entry.get())
-    except:
-        group_size = 4  # fallback default
+    # Get number of circles for this event
+    num_circles = event_circle_counts.get(event_name, 3)
+    num_circles = max(1, num_circles)  # Ensure at least 1 circle
 
-    groups = [thrower_list[i:i + group_size] for i in range(0, len(thrower_list), group_size)]
+    # Distribute throwers as evenly as possible over num_circles
+    groups = [[] for _ in range(num_circles)]
+    for i, thrower in enumerate(thrower_list):
+        group_index = i % num_circles
+        groups[group_index].append(thrower)
+
     for i, group in enumerate(groups, start=1):
         for thrower in group:
-            tree.insert("", "end", values=(f"Group {i}", *thrower))
+            tree.insert("", "end", values=(f"Circle {i}", *thrower))
+
 
 # Modify save_accuracy_results to add the next event's score tab and group tab
 def save_accuracy_results():

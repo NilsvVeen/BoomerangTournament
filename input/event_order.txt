@@ -1,6 +1,6 @@
-Fast Catch|2
-Endurance|3
-Maximum Time Aloft|3
-Accuracy|5
-Trick Catch|3
-Aussie Round 50|3
+Fast Catch|7
+Endurance|7
+Maximum Time Aloft|7
+Accuracy|7
+Trick Catch|7
+Aussie Round 50|7
