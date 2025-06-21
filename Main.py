@@ -160,6 +160,8 @@ def update_tournament_page(event_title, scores_html):
 
 
 
+import math
+
 def calculate_fast_catch_points(time_taken, num_catches):
     min_time = 15
     time_limit = 60
@@ -173,7 +175,7 @@ def calculate_fast_catch_points(time_taken, num_catches):
         4: 659
     }
 
-    # Convert to int for hardcoded catch lookup
+    # If time is None (user did not enter time), use hardcoded lookup
     if time_taken is None:
         try:
             catches = int(num_catches)
@@ -187,9 +189,18 @@ def calculate_fast_catch_points(time_taken, num_catches):
     except:
         return 0
 
+    try:
+        time_taken = float(time_taken)
+    except:
+        return 0
+
+    if time_taken == 0:
+        return 0
+    elif time_taken < min_time:
+        return 1000
+
     if num_catches >= laps_required:
         try:
-            time_taken = float(time_taken)
             return math.floor(500 * math.log10(1 + 99 * min_time / time_taken))
         except:
             return 0
@@ -199,6 +210,7 @@ def calculate_fast_catch_points(time_taken, num_catches):
             return math.floor(500 * math.log10(1 + 99 * ratio))
         except:
             return 0
+
 
 def calculate_event_points(event, raw_score):
     if raw_score in ["DNF", "dnf"]:
