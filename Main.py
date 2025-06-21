@@ -44,33 +44,33 @@ def save_website_credentials():
             f.write(f"{key}={value}\n")
 
 
-def post_to_wordpress(title, content):
-    username = website_credentials.get("username", "")
-    app_password = website_credentials.get("app_password", "")
-    base_url = website_credentials.get("base_url", "")
-    tournament_slug = website_credentials.get("tournament_slug", "")
-
-    if not all([username, app_password, base_url, tournament_slug]):
-        print("❌ Missing WordPress credentials or tournament slug.")
-        return
-
-    post_data = {
-        "title": title,
-        "slug": tournament_slug,
-        "content": content,
-        "status": "publish"
-    }
-
-    response = requests.post(
-        base_url,
-        auth=HTTPBasicAuth(username, app_password),
-        json=post_data
-    )
-
-    if response.status_code == 201:
-        print("✅ Posted to WordPress:", response.json().get('link', '[no link returned]'))
-    else:
-        print("❌ Failed to post:", response.status_code, response.text)
+# def post_to_wordpress(title, content):
+#     username = website_credentials.get("username", "")
+#     app_password = website_credentials.get("app_password", "")
+#     base_url = website_credentials.get("base_url", "")
+#     tournament_slug = website_credentials.get("tournament_slug", "")
+#
+#     if not all([username, app_password, base_url, tournament_slug]):
+#         print("❌ Missing WordPress credentials or tournament slug.")
+#         return
+#
+#     post_data = {
+#         "title": title,
+#         "slug": tournament_slug,
+#         "content": content,
+#         "status": "publish"
+#     }
+#
+#     response = requests.post(
+#         base_url,
+#         auth=HTTPBasicAuth(username, app_password),
+#         json=post_data
+#     )
+#
+#     if response.status_code == 201:
+#         print("✅ Posted to WordPress:", response.json().get('link', '[no link returned]'))
+#     else:
+#         print("❌ Failed to post:", response.status_code, response.text)
 
 
 
@@ -1483,10 +1483,6 @@ def save_event_results(event, summary_lines=None):
     # Generate ranked HTML
     summary_html = format_ranked_results(event, event_scores)
     update_tournament_page( event, summary_html)
-
-
-
-    print(summary_html)
 
     # #
     # # # Post to WordPress

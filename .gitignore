@@ -195,3 +195,5 @@ cython_debug/
 
 
 .idea
+
+input/website.config.txt
