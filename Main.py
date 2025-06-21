@@ -1065,6 +1065,8 @@ def next_event_grouping():
     num_groups = event_circle_counts.get(next_event, 3)
     fair_groups = make_fair_competitive_groups(thrower_scores, num_groups)
 
+    print('Debug')
+    print(fair_groups) # somewhere here goes wrong with showing the groups
     # Step 5: Remove existing "[Next Event] Circles" tab if it exists
     next_tab_title = f"{next_event} Circles"
     for i in range(len(circles_notebook.tabs())):
@@ -1096,15 +1098,14 @@ def create_event_group_tab(event_name, thrower_list):
     num_circles = event_circle_counts.get(event_name, 3)
     num_circles = max(1, num_circles)
 
-    # Distribute throwers evenly over num_circles
-    groups = [[] for _ in range(num_circles)]
-    for i, thrower in enumerate(thrower_list):
-        group_index = i % num_circles
-        groups[group_index].append(thrower)
+    # Distribute throwers sequentially into groups
+    group_size = (len(thrower_list) + num_circles - 1) // num_circles
+    groups = [thrower_list[i * group_size : (i + 1) * group_size] for i in range(num_circles)]
 
     for i, group in enumerate(groups, start=1):
         for thrower in group:
             tree.insert("", "end", values=(f"Circle {i}", *thrower))
+
 
 
 
