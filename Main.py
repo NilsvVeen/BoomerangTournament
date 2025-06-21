@@ -1,16 +1,15 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from readThrowers import read_throwers  # Import the function to read throwers
-import random
 
 import csv
-from datetime import datetime
+import re
+import requests
+from requests.auth import (HTTPBasicAuth)
+import math
+import random
+import shutil
 import os
 
-import random
-
-import requests
-from requests.auth import HTTPBasicAuth
 
 uploadingToWebsite = True # disabled for now avoid writing to website.
 event_circle_counts = {}  # e.g., {"Accuracy": 3, "Fast Catch": 2}
@@ -42,36 +41,6 @@ def save_website_credentials():
     with open("input/website_config.txt", "w", encoding="utf-8") as f:
         for key, value in website_credentials.items():
             f.write(f"{key}={value}\n")
-
-
-# def post_to_wordpress(title, content):
-#     username = website_credentials.get("username", "")
-#     app_password = website_credentials.get("app_password", "")
-#     base_url = website_credentials.get("base_url", "")
-#     tournament_slug = website_credentials.get("tournament_slug", "")
-#
-#     if not all([username, app_password, base_url, tournament_slug]):
-#         print("❌ Missing WordPress credentials or tournament slug.")
-#         return
-#
-#     post_data = {
-#         "title": title,
-#         "slug": tournament_slug,
-#         "content": content,
-#         "status": "publish"
-#     }
-#
-#     response = requests.post(
-#         base_url,
-#         auth=HTTPBasicAuth(username, app_password),
-#         json=post_data
-#     )
-#
-#     if response.status_code == 201:
-#         print("✅ Posted to WordPress:", response.json().get('link', '[no link returned]'))
-#     else:
-#         print("❌ Failed to post:", response.status_code, response.text)
-
 
 
 
@@ -117,10 +86,6 @@ def format_ranked_results(event_title, scores_dict):
     return "\n".join(lines)
 
 
-
-import re
-import requests
-from requests.auth import HTTPBasicAuth
 
 def update_tournament_page(event_title, scores_html):
     if uploadingToWebsite:
@@ -194,27 +159,6 @@ def update_tournament_page(event_title, scores_html):
                 print(f"❌ Failed to create page: {create.status_code} {create.text}")
 
 
-
-
-# def make_fair_competitive_groups(throwers_with_scores, num_groups=4, block_size=5):
-#     sorted_throwers = sorted(throwers_with_scores, key=lambda x: -x[0])
-#     groups = [[] for _ in range(num_groups)]
-#
-#     # Break into blocks of N (e.g. 5-ranked groups)
-#     blocks = [sorted_throwers[i:i + block_size] for i in range(0, len(sorted_throwers), block_size)]
-#
-#     current_index = 0
-#     for block in blocks:
-#         random.shuffle(block)  # small shuffle to reduce exact rank streaks
-#         for thrower in block:
-#             groups[current_index % num_groups].append(thrower[1])
-#             current_index += 1
-#
-#     return groups
-
-import math
-
-import math
 
 def calculate_fast_catch_points(time_taken, num_catches):
     min_time = 15
@@ -432,47 +376,6 @@ def make_fair_competitive_groups(throwers_with_scores, num_groups=4):
 
 
 
-
-# def make_fair_competitive_groups(throwers_with_scores, num_groups=4):
-#     sorted_throwers = sorted(throwers_with_scores, key=lambda x: -x[0])  # descending
-#     groups = [[] for _ in range(num_groups)]
-#     used_indices = set()
-#
-#     # Step 1: Seed top throwers (Rank 1, 2, 3, ...)
-#     for group_idx in range(num_groups):
-#         if group_idx < len(sorted_throwers):
-#             groups[group_idx].append(sorted_throwers[group_idx][1])
-#             used_indices.add(group_idx)
-#
-#     # Step 2: Fill with nearby competitors (±2 range from seed rank)
-#     for group_idx in range(num_groups):
-#         seed_idx = group_idx
-#         added = 0
-#         for offset in range(1, 3):  # Look at +1, +2 and -1, -2
-#             for neighbor_idx in [seed_idx - offset, seed_idx + offset]:
-#                 if 0 <= neighbor_idx < len(sorted_throwers) and neighbor_idx not in used_indices:
-#                     groups[group_idx].append(sorted_throwers[neighbor_idx][1])
-#                     used_indices.add(neighbor_idx)
-#                     added += 1
-#                 if added >= 2:
-#                     break
-#             if added >= 2:
-#                 break
-#
-#     # Step 3: Distribute remaining throwers round-robin
-#     remaining = [t[1] for i, t in enumerate(sorted_throwers) if i not in used_indices]
-#     for i, thrower in enumerate(remaining):
-#         groups[i % num_groups].append(thrower)
-#
-#     return groups
-
-import random
-
-
-
-
-
-
 def save_accuracy_results():
     event = current_event_order[0]
     folder = "output"
@@ -643,9 +546,7 @@ def read_throwers_safe(file_path):
     return throwers
 
 
-import shutil
-import os
-import random
+
 
 def load_restrictions():
     try:
@@ -802,26 +703,6 @@ remove_restriction_button.grid(row=1, column=0, padx=10)
 tree.bind("<ButtonRelease-1>", lambda event: tree.selection())
 
 
-# # === Create Groups Tab ===
-# groups_tab = ttk.Frame(notebook)
-# notebook.add(groups_tab, text="Group Generator")
-#
-# group_frame = tk.Frame(groups_tab)
-# group_frame.pack(pady=10)
-#
-# # Input: Desired group size
-# tk.Label(group_frame, text="Group Size:").grid(row=0, column=0, padx=5)
-# group_size_entry = tk.Entry(group_frame)
-# group_size_entry.grid(row=0, column=1, padx=5)
-#
-# # Treeview to display groups
-# groups_tree = ttk.Treeview(groups_tab, columns=("Group", "First Name", "Last Name", "Nationality", "Category"),
-#                            show="headings", height=15)
-# for col in ("Group", "First Name", "Last Name", "Nationality", "Category"):
-#     groups_tree.heading(col, text=col)
-# groups_tree.pack(fill="both", expand=True, padx=10, pady=10)
-
-
 # === Helper: Check if two throwers are restricted ===
 def are_restricted(t1, t2):
     name1 = f"{t1[0]} {t1[1]}"
@@ -835,140 +716,6 @@ def are_restricted(t1, t2):
         if name1 in names and name2 in names:
             return True
     return False
-
-# def generate_balanced_groups():
-#     try:
-#         group_size = int(group_size_entry.get())
-#         if group_size <= 0:
-#             raise ValueError
-#
-#         for item in groups_tree.get_children():
-#             groups_tree.delete(item)
-#
-#         # Step 1: Build restricted units
-#         restricted_units = []
-#         used_indices = set()
-#         for group in restricted_groups.values():
-#             unit = []
-#             for item in group:
-#                 row_index = int(tree.item(item, "values")[0]) - 1
-#                 if row_index not in used_indices:
-#                     unit.append(throwers[row_index])
-#                     used_indices.add(row_index)
-#             if unit:
-#                 restricted_units.append(unit)
-#
-#         # Step 2: Group remaining throwers by category
-#         categories = {}
-#         for i, thrower in enumerate(throwers):
-#             if i in used_indices:
-#                 continue
-#             category = thrower[3].lower()
-#             if category not in categories:
-#                 categories[category] = []
-#             categories[category].append(thrower)
-#
-#         # Step 3: Sort categories into tiers (assuming stronger throwers come first alphabetically)
-#         sorted_cats = sorted(categories.items(), key=lambda x: x[0])
-#         sorted_throwers = []
-#         for _, tlist in sorted_cats:
-#             random.shuffle(tlist)
-#             sorted_throwers.extend(tlist)
-#
-#         # Convert single throwers to 1-element units
-#         unrestricted_units = [[t] for t in sorted_throwers]
-#         all_units = restricted_units + unrestricted_units
-#
-#         # Step 4: Distribute units into groups round-robin
-#         num_groups = (len(throwers) + group_size - 1) // group_size
-#         groups = [[] for _ in range(num_groups)]
-#
-#         i = 0
-#         for unit in all_units:
-#             # Find next group with enough space
-#             assigned = False
-#             for _ in range(num_groups):
-#                 if len(groups[i]) + len(unit) <= group_size:
-#                     groups[i].extend(unit)
-#                     assigned = True
-#                     break
-#                 i = (i + 1) % num_groups
-#             if not assigned:
-#                 # If all groups are full, make a new one
-#                 groups.append(unit)
-#             i = (i + 1) % len(groups)
-#
-#         # Step 5: Display groups
-#         for group_num, group in enumerate(groups, start=1):
-#             for thrower in group:
-#                 groups_tree.insert("", "end", values=(f"Group {group_num}", *thrower))
-#
-#     except ValueError:
-#         messagebox.showerror("Input Error", "Please enter a valid integer group size.")
-#
-#
-# def generate_groups():
-#     try:
-#         group_size = int(group_size_entry.get())
-#         if group_size <= 0:
-#             raise ValueError
-#
-#         # Clear previous output
-#         for item in groups_tree.get_children():
-#             groups_tree.delete(item)
-#
-#         # Step 1: Build restricted groups as units
-#         restricted_units = []
-#         used_indices = set()
-#
-#         for group in restricted_groups.values():
-#             unit = []
-#             for item in group:
-#                 row_index = int(tree.item(item, "values")[0]) - 1
-#                 if row_index not in used_indices:
-#                     unit.append(throwers[row_index])
-#                     used_indices.add(row_index)
-#             if unit:
-#                 restricted_units.append(unit)
-#
-#         # Step 2: Add the remaining (non-restricted) throwers as individual units
-#         unrestricted_units = [
-#             [thrower] for i, thrower in enumerate(throwers) if i not in used_indices
-#         ]
-#
-#         all_units = restricted_units + unrestricted_units
-#         random.shuffle(all_units)
-#
-#         # Step 3: Form groups using units
-#         groups = []
-#         current_group = []
-#         for unit in all_units:
-#             if len(current_group) + len(unit) > group_size:
-#                 if current_group:
-#                     groups.append(current_group)
-#                 current_group = []
-#
-#             current_group.extend(unit)
-#
-#         if current_group:
-#             groups.append(current_group)
-#
-#         # Step 4: Display results
-#         for group_num, group in enumerate(groups, start=1):
-#             for thrower in group:
-#                 groups_tree.insert("", "end", values=(f"Group {group_num}", *thrower))
-#
-#     except ValueError:
-#         messagebox.showerror("Input Error", "Please enter a valid integer group size.")
-#
-#
-# # Button to trigger group generation
-# generate_button = tk.Button(group_frame, text="Generate Groups", command=generate_groups)
-# generate_button.grid(row=0, column=2, padx=10)
-#
-# balanced_button = tk.Button(group_frame, text="Generate Balanced Groups", command=generate_balanced_groups)
-# balanced_button.grid(row=0, column=3, padx=10)
-
 
 
 # === Website Connection Tab ===
@@ -1024,9 +771,7 @@ tk.Button(button_frame, text="Save Credentials", command=save_credentials_from_f
 tk.Button(button_frame, text="Reload From File", command=load_credentials_to_fields).pack(side="left", padx=10)
 
 
-
 # === Event Order Tab ===
-import os
 
 # State storage
 current_event_order = []
@@ -1263,13 +1008,6 @@ def update_total_points_tab():
         tk.Label(summary_frame, text=event, font=("Helvetica", 12, "bold")).grid(row=0, column=j + 1, padx=5, pady=5, sticky="w")
     tk.Label(summary_frame, text="Total", font=("Helvetica", 12, "bold")).grid(row=0, column=len(current_event_order) + 1, padx=10, pady=5, sticky="w")
 
-    # for i, thrower in enumerate(throwers):
-    #     full_name = f"{thrower[0]} {thrower[1]}"
-    #     scores = total_scores.get(full_name, [0] * (len(current_event_order) + 1))
-    #     tk.Label(summary_frame, text=full_name, font=("Helvetica", 11)).grid(row=i + 1, column=0, sticky="w", padx=10, pady=2)
-    #     for j, s in enumerate(scores[:-1]):
-    #         tk.Label(summary_frame, text=str(s), font=("Helvetica", 11)).grid(row=i + 1, column=j + 1, padx=5, pady=2)
-    #     tk.Label(summary_frame, text=str(scores[-1]), font=("Helvetica", 11, "bold")).grid(row=i + 1, column=len(current_event_order) + 1, padx=10, pady=2)
 
     for i, thrower in enumerate(throwers):
         full_name = f"{thrower[0]} {thrower[1]}"
@@ -1484,10 +1222,6 @@ def save_event_results(event, summary_lines=None):
     summary_html = format_ranked_results(event, event_scores)
     update_tournament_page( event, summary_html)
 
-    # #
-    # # # Post to WordPress
-    # post_to_wordpress(f"{event} Results", "\n".join(summary_lines))
-    # update_tournament_page("tournament-ebc2025-results", event, "\n".join(summary_lines))
 
 
 def create_score_tab(event):
