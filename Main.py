@@ -19,7 +19,8 @@ event_circle_counts = {}  # e.g., {"Accuracy": 3, "Fast Catch": 2}
 website_credentials = {
     "username": "",
     "app_password": "",
-    "base_url": ""
+    "base_url": "",
+    "tournament_slug": ""
 }
 
 
@@ -29,6 +30,7 @@ def load_website_credentials():
             for line in f:
                 if '=' in line:
                     key, value = line.strip().split("=", 1)
+                    print(key,value)
                     website_credentials[key.strip()] = value.strip()
     except FileNotFoundError:
         pass
@@ -45,16 +47,22 @@ def save_website_credentials():
 def post_to_wordpress(title, content):
     username = website_credentials.get("username", "")
     app_password = website_credentials.get("app_password", "")
-    site_url = website_credentials.get("base_url", "")  # assumed to be full endpoint for posts
+    base_url = website_credentials.get("base_url", "")
+    tournament_slug = website_credentials.get("tournament_slug", "")
+
+    if not all([username, app_password, base_url, tournament_slug]):
+        print("❌ Missing WordPress credentials or tournament slug.")
+        return
 
     post_data = {
         "title": title,
+        "slug": tournament_slug,
         "content": content,
         "status": "publish"
     }
 
     response = requests.post(
-        site_url,
+        base_url,
         auth=HTTPBasicAuth(username, app_password),
         json=post_data
     )
@@ -63,6 +71,7 @@ def post_to_wordpress(title, content):
         print("✅ Posted to WordPress:", response.json().get('link', '[no link returned]'))
     else:
         print("❌ Failed to post:", response.status_code, response.text)
+
 
 
 
@@ -113,13 +122,17 @@ import re
 import requests
 from requests.auth import HTTPBasicAuth
 
-def update_tournament_page(tournament_slug, event_title, scores_html):
-    if uploadingToWebsite:  # now just disable to avoid errors
-        # Use predefined credentials
+def update_tournament_page(event_title, scores_html):
+    if uploadingToWebsite:
         username = website_credentials.get("username", "")
         app_password = website_credentials.get("app_password", "")
         base_url = website_credentials.get("base_url", "")
+        tournament_slug = website_credentials.get("tournament_slug", "")
         auth = HTTPBasicAuth(username, app_password)
+
+        if not all([username, app_password, base_url, tournament_slug]):
+            print("❌ Missing required website credentials.")
+            return
 
         # 1. Get page by slug
         response = requests.get(f"{base_url}?slug={tournament_slug}", auth=auth)
@@ -161,7 +174,6 @@ def update_tournament_page(tournament_slug, event_title, scores_html):
             else:
                 print(f"❌ Failed to update page: {update.status_code} {update.text}")
         else:
-            # Page doesn't exist — create it
             print(f"⚠️ Creating new page for tournament '{tournament_slug}'...")
 
             new_content = f"<h1>{tournament_slug.replace('-', ' ').title()}</h1>\n\n<!-- EVENT: {event_title} -->\n<h2>{event_title}</h2>\n{scores_html}\n<!-- END EVENT: {event_title} -->"
@@ -180,6 +192,7 @@ def update_tournament_page(tournament_slug, event_title, scores_html):
                 print(f"✅ Created new page '{tournament_slug}'.")
             else:
                 print(f"❌ Failed to create page: {create.status_code} {create.text}")
+
 
 
 
@@ -979,21 +992,28 @@ tk.Label(form_frame, text="Base URL:").grid(row=2, column=0, sticky="e", padx=5,
 base_url_entry = tk.Entry(form_frame, width=40)
 base_url_entry.grid(row=2, column=1, padx=5, pady=2)
 
+tk.Label(form_frame, text="Tournament Slug:").grid(row=3, column=0, sticky="e", padx=5, pady=2)
+tournament_slug_entry = tk.Entry(form_frame, width=40)
+tournament_slug_entry.grid(row=3, column=1, padx=5, pady=2)
+
 def load_credentials_to_fields():
+
     username_entry.delete(0, tk.END)
     username_entry.insert(0, website_credentials["username"])
     app_password_entry.delete(0, tk.END)
     app_password_entry.insert(0, website_credentials["app_password"])
     base_url_entry.delete(0, tk.END)
     base_url_entry.insert(0, website_credentials["base_url"])
-
-    print("credentials insreted")
+    tournament_slug_entry.delete(0, tk.END)
+    tournament_slug_entry.insert(0, website_credentials["tournament_slug"])
+    print("Credentials inserted:")
     print(website_credentials)
 
 def save_credentials_from_fields():
     website_credentials["username"] = username_entry.get().strip()
     website_credentials["app_password"] = app_password_entry.get().strip()
     website_credentials["base_url"] = base_url_entry.get().strip()
+    website_credentials["tournament_slug"] = tournament_slug_entry.get().strip()
     save_website_credentials()
     messagebox.showinfo("Saved", "Website credentials saved.")
 
@@ -1462,7 +1482,7 @@ def save_event_results(event, summary_lines=None):
 
     # Generate ranked HTML
     summary_html = format_ranked_results(event, event_scores)
-    update_tournament_page("tournament-ebc2025-results", event, summary_html)
+    update_tournament_page( event, summary_html)
 
 
 
