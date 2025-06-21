@@ -1,0 +1,32 @@
+========= SCORING NOTES =========
+
+🏆 GENERAL:
+- All scores are case-insensitive.
+- Use numbers only, except where specified.
+- Negative scores will be clamped to 0.
+
+📛 SPECIAL CODES:
+- 'DNF' or 'dnf': Did Not Finish → -100 points
+- 'DNS', 'dns', or 'np': Did Not Start → -200 points
+
+🎯 EVENT-SPECIFIC INPUTS:
+
+🔸 Accuracy / Aussie Round / Trick Catch / Endurance:
+- Just enter a number (e.g., "75").
+
+🔸 Maximum Time Aloft (MTA):
+- Enter time in seconds (e.g., "18.5").
+
+🔸 Fast Catch:
+Accepted input formats:
+  • "17.2"        → time only (assumes 5 catches)
+  • "17.2/5"      → time and number of catches
+  • "5C"          → number of catches only
+
+✏️ FAST CATCH SCORING RULES:
+- Time < 15 seconds         → score is 1000
+- Time = 0 or invalid       → score is 0
+- Fewer than 5 catches      → partial score is calculated
+- 1C–4C (no time)           → uses predefined scores
+
+=================================

@@ -1429,6 +1429,22 @@ tk.Label(
 ).pack(pady=10)
 
 
+scoring_tab = ttk.Frame(notebook)
+notebook.add(scoring_tab, text="Scoring Notes")
+
+scoring_label = tk.Text(scoring_tab, wrap="word", font=("Helvetica", 11))
+scoring_label.config(state="normal", padx=10, pady=10)
+
+try:
+    with open("input/scoring_notes.txt", "r", encoding="utf-8") as f:
+        scoring_label.insert("1.0", f.read())
+except FileNotFoundError:
+    scoring_label.insert("1.0", "Scoring notes file not found. Please add 'scoring_notes.txt'.")
+
+scoring_label.config(state="disabled")
+scoring_label.pack(expand=True, fill="both")
+
+
 
 root.mainloop()
 
