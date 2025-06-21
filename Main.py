@@ -12,15 +12,40 @@ import random
 import requests
 from requests.auth import HTTPBasicAuth
 
-uploadingToWebsite = False # disabled for now avoid writing to website.
+uploadingToWebsite = True # disabled for now avoid writing to website.
 event_circle_counts = {}  # e.g., {"Accuracy": 3, "Fast Catch": 2}
 
 
-def post_to_wordpress(title, content):
+website_credentials = {
+    "username": "",
+    "app_password": "",
+    "base_url": ""
+}
 
-    username = ''
-    app_password = ''
-    site_url = ''
+
+def load_website_credentials():
+    try:
+        with open("input/website_config.txt", "r", encoding="utf-8") as f:
+            for line in f:
+                if '=' in line:
+                    key, value = line.strip().split("=", 1)
+                    website_credentials[key.strip()] = value.strip()
+    except FileNotFoundError:
+        pass
+
+load_website_credentials()
+
+def save_website_credentials():
+    os.makedirs("input", exist_ok=True)
+    with open("input/website_config.txt", "w", encoding="utf-8") as f:
+        for key, value in website_credentials.items():
+            f.write(f"{key}={value}\n")
+
+
+def post_to_wordpress(title, content):
+    username = website_credentials.get("username", "")
+    app_password = website_credentials.get("app_password", "")
+    site_url = website_credentials.get("base_url", "")  # assumed to be full endpoint for posts
 
     post_data = {
         "title": title,
@@ -35,9 +60,10 @@ def post_to_wordpress(title, content):
     )
 
     if response.status_code == 201:
-        print("✅ Posted to WordPress:", response.json()['link'])
+        print("✅ Posted to WordPress:", response.json().get('link', '[no link returned]'))
     else:
         print("❌ Failed to post:", response.status_code, response.text)
+
 
 
 def format_ranked_results(event_title, scores_dict):
@@ -88,11 +114,11 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 def update_tournament_page(tournament_slug, event_title, scores_html):
-    if uploadingToWebsite: # now just disable to avoid errors
-
-        username = ''
-        app_password = ''
-        base_url = ''
+    if uploadingToWebsite:  # now just disable to avoid errors
+        # Use predefined credentials
+        username = website_credentials.get("username", "")
+        app_password = website_credentials.get("app_password", "")
+        base_url = website_credentials.get("base_url", "")
         auth = HTTPBasicAuth(username, app_password)
 
         # 1. Get page by slug
@@ -154,6 +180,7 @@ def update_tournament_page(tournament_slug, event_title, scores_html):
                 print(f"✅ Created new page '{tournament_slug}'.")
             else:
                 print(f"❌ Failed to create page: {create.status_code} {create.text}")
+
 
 
 # def make_fair_competitive_groups(throwers_with_scores, num_groups=4, block_size=5):
@@ -931,6 +958,50 @@ def are_restricted(t1, t2):
 
 
 
+# === Website Connection Tab ===
+website_tab = ttk.Frame(notebook)
+notebook.add(website_tab, text="Website")
+
+tk.Label(website_tab, text="Connect to a Website", font=("Helvetica", 14, "bold")).pack(pady=10)
+
+form_frame = tk.Frame(website_tab)
+form_frame.pack(pady=5)
+
+tk.Label(form_frame, text="Username:").grid(row=0, column=0, sticky="e", padx=5, pady=2)
+username_entry = tk.Entry(form_frame, width=40)
+username_entry.grid(row=0, column=1, padx=5, pady=2)
+
+tk.Label(form_frame, text="App Password:").grid(row=1, column=0, sticky="e", padx=5, pady=2)
+app_password_entry = tk.Entry(form_frame, width=40, show="*")
+app_password_entry.grid(row=1, column=1, padx=5, pady=2)
+
+tk.Label(form_frame, text="Base URL:").grid(row=2, column=0, sticky="e", padx=5, pady=2)
+base_url_entry = tk.Entry(form_frame, width=40)
+base_url_entry.grid(row=2, column=1, padx=5, pady=2)
+
+def load_credentials_to_fields():
+    username_entry.delete(0, tk.END)
+    username_entry.insert(0, website_credentials["username"])
+    app_password_entry.delete(0, tk.END)
+    app_password_entry.insert(0, website_credentials["app_password"])
+    base_url_entry.delete(0, tk.END)
+    base_url_entry.insert(0, website_credentials["base_url"])
+
+    print("credentials insreted")
+    print(website_credentials)
+
+def save_credentials_from_fields():
+    website_credentials["username"] = username_entry.get().strip()
+    website_credentials["app_password"] = app_password_entry.get().strip()
+    website_credentials["base_url"] = base_url_entry.get().strip()
+    save_website_credentials()
+    messagebox.showinfo("Saved", "Website credentials saved.")
+
+button_frame = tk.Frame(website_tab)
+button_frame.pack(pady=10)
+
+tk.Button(button_frame, text="Save Credentials", command=save_credentials_from_fields).pack(side="left", padx=10)
+tk.Button(button_frame, text="Reload From File", command=load_credentials_to_fields).pack(side="left", padx=10)
 
 
 
@@ -1349,7 +1420,7 @@ def update_total_points_tab():
             tk.Label(frame, text=str(s), font=("Helvetica", 11)).grid(row=i + 1, column=j + 2, padx=5, pady=2)
         tk.Label(frame, text=str(scores[-1]), font=("Helvetica", 11, "bold")).grid(row=i + 1, column=len(headers) - 1, padx=5, pady=2)
 
-def save_event_results(event):
+def save_event_results(event, summary_lines=None):
     folder = "output"
     os.makedirs(folder, exist_ok=True)
     filename = os.path.join(folder, f"{event.lower().replace(' ', '_')}_results.csv")
@@ -1393,8 +1464,12 @@ def save_event_results(event):
     summary_html = format_ranked_results(event, event_scores)
     update_tournament_page("tournament-ebc2025-results", event, summary_html)
 
-    #
-    # # Post to WordPress
+
+
+    print(summary_html)
+
+    # #
+    # # # Post to WordPress
     # post_to_wordpress(f"{event} Results", "\n".join(summary_lines))
     # update_tournament_page("tournament-ebc2025-results", event, "\n".join(summary_lines))
 
