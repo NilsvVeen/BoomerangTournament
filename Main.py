@@ -1445,7 +1445,7 @@ scoring_label.config(state="disabled")
 scoring_label.pack(expand=True, fill="both")
 
 
-
+root.iconbitmap("images/favicon.ico")
 root.mainloop()
 
 
