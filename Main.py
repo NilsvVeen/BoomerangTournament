@@ -1428,12 +1428,26 @@ tk.Label(
     font=("Helvetica", 12)
 ).pack(pady=10)
 
+tk.Label(
+    credits_tab,
+    text="© 2025 Boomerang Tournament Manager\n"
+         "This software is provided for personal and educational use only.\n"
+         "Commercial use, redistribution, or publishing on external platforms\n"
+         "without written permission is strictly prohibited.",
+    font=("Helvetica", 9),
+    fg="gray"
+).pack(pady=(20, 10))
+
 
 scoring_tab = ttk.Frame(notebook)
 notebook.add(scoring_tab, text="Scoring Notes")
 
 scoring_label = tk.Text(scoring_tab, wrap="word", font=("Helvetica", 11))
 scoring_label.config(state="normal", padx=10, pady=10)
+
+
+
+
 
 try:
     with open("input/scoring_notes.txt", "r", encoding="utf-8") as f:
