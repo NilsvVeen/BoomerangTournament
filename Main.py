@@ -1369,6 +1369,53 @@ score_tab_button.grid(row=0, column=3, padx=10)
 
 
 
+import webbrowser
+
+APP_VERSION = "v1.0"
+
+def open_website(event=None):
+    webbrowser.open_new("https://www.boomerangsbynils.com")
+
+credits_tab = ttk.Frame(notebook)
+notebook.add(credits_tab, text="Credits")
+
+
+
+tk.Label(
+    credits_tab,
+    text="Boomerang Tournament Manager",
+    font=("Helvetica", 16, "bold")
+).pack(pady=(10, 0))
+
+tk.Label(
+    credits_tab,
+    text=f"Version: {APP_VERSION}",
+    font=("Helvetica", 10, "italic")
+).pack(pady=(0, 10))
+
+tk.Label(
+    credits_tab,
+    text="Developed by:\nNils van Veen",
+    font=("Helvetica", 12)
+).pack()
+
+# Clickable link
+website_link = tk.Label(
+    credits_tab,
+    text="www.boomerangsbynils.com",
+    font=("Helvetica", 12, "underline"),
+    fg="blue",
+    cursor="hand2"
+)
+website_link.pack()
+website_link.bind("<Button-1>", open_website)
+
+tk.Label(
+    credits_tab,
+    text="\nWith contributions from:\nManuel Schütz",
+    font=("Helvetica", 12)
+).pack(pady=10)
+
 
 
 root.mainloop()
