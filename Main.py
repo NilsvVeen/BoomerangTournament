@@ -639,10 +639,12 @@ def remove_restriction():
         messagebox.showerror("Selection Error", "Please select a thrower to remove the restriction.")
 
 
-
+from ttkthemes import ThemedTk
 # GUI setup
-root = tk.Tk()
+
+root = ThemedTk(theme="adapta")  # Or "equilux", "arc", "adapta", etc.
 root.title("Boomerang Tournament Manager")
+
 
 # Create a Notebook widget for tabs
 notebook = ttk.Notebook(root)
