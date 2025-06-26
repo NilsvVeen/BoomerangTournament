@@ -32,3 +32,9 @@ current_event_order = []
 event_circle_counts = {}
 selected_event_index = None
 circle_entries = []
+
+#credentials
+username_entry = None
+app_password_entry = None
+base_url_entry = None
+tournament_slug_entry = None

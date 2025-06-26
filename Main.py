@@ -17,6 +17,7 @@ from updateWebsite import *
 from CalculateScoreRelative import *
 from groupSorting import *
 from ThrowersPage import *
+from Credentials import *
 
 
 load_website_credentials()
@@ -149,41 +150,21 @@ form_frame = tk.Frame(website_tab)
 form_frame.pack(pady=5)
 
 tk.Label(form_frame, text="Username:").grid(row=0, column=0, sticky="e", padx=5, pady=2)
-username_entry = tk.Entry(form_frame, width=40)
-username_entry.grid(row=0, column=1, padx=5, pady=2)
+config.username_entry = tk.Entry(form_frame, width=40)
+config.username_entry.grid(row=0, column=1, padx=5, pady=2)
 
 tk.Label(form_frame, text="App Password:").grid(row=1, column=0, sticky="e", padx=5, pady=2)
-app_password_entry = tk.Entry(form_frame, width=40, show="*")
-app_password_entry.grid(row=1, column=1, padx=5, pady=2)
+config.app_password_entry = tk.Entry(form_frame, width=40, show="*")
+config.app_password_entry.grid(row=1, column=1, padx=5, pady=2)
 
 tk.Label(form_frame, text="Base URL:").grid(row=2, column=0, sticky="e", padx=5, pady=2)
-base_url_entry = tk.Entry(form_frame, width=40)
-base_url_entry.grid(row=2, column=1, padx=5, pady=2)
+config.base_url_entry = tk.Entry(form_frame, width=40)
+config.base_url_entry.grid(row=2, column=1, padx=5, pady=2)
 
 tk.Label(form_frame, text="Tournament Slug:").grid(row=3, column=0, sticky="e", padx=5, pady=2)
-tournament_slug_entry = tk.Entry(form_frame, width=40)
-tournament_slug_entry.grid(row=3, column=1, padx=5, pady=2)
+config.tournament_slug_entry = tk.Entry(form_frame, width=40)
+config.tournament_slug_entry.grid(row=3, column=1, padx=5, pady=2)
 
-def load_credentials_to_fields():
-
-    username_entry.delete(0, tk.END)
-    username_entry.insert(0, config.website_credentials["username"])
-    app_password_entry.delete(0, tk.END)
-    app_password_entry.insert(0, config.website_credentials["app_password"])
-    base_url_entry.delete(0, tk.END)
-    base_url_entry.insert(0, config.website_credentials["base_url"])
-    tournament_slug_entry.delete(0, tk.END)
-    tournament_slug_entry.insert(0, config.website_credentials["tournament_slug"])
-    print("Credentials inserted:")
-    print(config.website_credentials)
-
-def save_credentials_from_fields():
-    config.website_credentials["username"] = username_entry.get().strip()
-    config.website_credentials["app_password"] = app_password_entry.get().strip()
-    config.website_credentials["base_url"] = base_url_entry.get().strip()
-    config.website_credentials["tournament_slug"] = tournament_slug_entry.get().strip()
-    config.website_credentials()
-    messagebox.showinfo("Saved", "Website credentials saved.")
 
 button_frame = tk.Frame(website_tab)
 button_frame.pack(pady=10)
