@@ -6,11 +6,11 @@
 - make GUI fancy
 - if group small, add people to other groups
 - allow users to be swapped to a different group?
-- include tournament name field
+- include tournament name field ✅Done: slug for website
 - when filling in one event. then add new events and fill in score, it won't reflect to the total points page and throw an error. Consider restricting the order!
 - include linking to website ✅Done; needs a username, password to wordpress
 - add shuffling in final circles 
-
+- fast catch scores. 
 
 Manu Feedback
 =====================================
@@ -27,6 +27,25 @@ IndexError: string index out of range
   File "C:\Users\Manuel\AppData\Local\Programs\Python\Python313\Lib\tkinter\ttk.py", line 288, in _val_or_dict
     res = tk.call(*(args + options))
 _tkinter.TclError: Item I04E not found
+
+
+>>>> Exception in Tkinter callback
+Traceback (most recent call last):
+  File "C:\Users\Nils-Elvy\anaconda3\Lib\tkinter\__init__.py", line 1948, in __call__
+    return self.func(*args)
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\Nils-Elvy\Desktop\boomerangScoringTournament\BoomerangTournament\ThrowersPage.py", line 88, in restrict_couple
+    update_restrictions_file()
+  File "C:\Users\Nils-Elvy\Desktop\boomerangScoringTournament\BoomerangTournament\ThrowersPage.py", line 185, in update_restrictions_file
+    row_index = int(config.tree.item(item, "values")[0]) - 1  # Adjust for zero-based indexing
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Nils-Elvy\anaconda3\Lib\tkinter\ttk.py", line 1353, in item
+    return _val_or_dict(self.tk, kw, self._w, "item", item)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Nils-Elvy\anaconda3\Lib\tkinter\ttk.py", line 281, in _val_or_dict
+    res = tk.call(*(args + options))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+_tkinter.TclError: Item I01C not found                                    >>>>>>>> only happend once?
 
 after restarting main.py it works again.
 So probably an index is not updated afterdeleting a thrower?
@@ -59,7 +78,7 @@ Order within group: Usually, the best throwers compete last, not first. ✅Done:
 
 By "Group" you probably mean "circle"? The number of circles may change from event to event. ✅Done
 
-My basic idea was:   ✘ Mostly done. Needs an update
+My basic idea was:   ✘ Mostly done. Needs an update. Look at current algorithm if thats sufficient
 1. ‎How many circles are in use? Let's say 3 ✅Done
 2. How many throwers? Lets say 23 ✅Done
 3. Then we have 3x7+2 (split in two halves foreach circle).

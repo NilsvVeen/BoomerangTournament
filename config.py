@@ -18,3 +18,8 @@ restricted_groups = {}  # Dictionary to keep track of restricted groups with the
 throwers_tab = None
 tree = None
 
+# throwers page
+first_name_entry = None
+last_name_entry = None
+nationality_entry = None
+category_entry = None
