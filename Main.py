@@ -10,12 +10,12 @@ import random
 import shutil
 import os
 
-import config
+from config import *
 
 from websiteConnect import *
 from updateWebsite import *
-
-
+from CalculateScoreRelative import *
+from groupSorting import *
 
 
 load_website_credentials()
@@ -27,231 +27,8 @@ load_website_credentials()
 
 
 
-import math
-
-def calculate_fast_catch_points(time_taken, num_catches):
-    min_time = 15
-    time_limit = 60
-    laps_required = 5
-
-    # Hardcoded values for 1C–4C
-    hardcoded_points = {
-        1: 387,
-        2: 518,
-        3: 600,
-        4: 659
-    }
-
-    # If time is None (user did not enter time), use hardcoded lookup
-    if time_taken is None:
-        try:
-            catches = int(num_catches)
-            if catches in hardcoded_points:
-                return hardcoded_points[catches]
-        except:
-            return 0
-
-    try:
-        num_catches = float(num_catches)
-    except:
-        return 0
-
-    try:
-        time_taken = float(time_taken)
-    except:
-        return 0
-
-    if time_taken == 0:
-        return 0
-    elif time_taken < min_time:
-        return 1000
-
-    if num_catches >= laps_required:
-        try:
-            return math.floor(500 * math.log10(1 + 99 * min_time / time_taken))
-        except:
-            return 0
-    else:
-        try:
-            ratio = (min_time / time_limit) * (num_catches / laps_required)
-            return math.floor(500 * math.log10(1 + 99 * ratio))
-        except:
-            return 0
 
 
-def calculate_event_points(event, raw_score):
-    if raw_score in ["DNF", "dnf"]:
-        return -100
-    if raw_score in ["DNS", "np", "dns"]:
-        return -200
-
-    event = event.strip().title()
-
-    if event in ["Fast Catch", "Fc"]:
-        try:
-            raw_score = str(raw_score).strip().upper()
-
-            if raw_score.endswith("C") and "/" not in raw_score:
-                catches = float(raw_score[:-1])
-                return calculate_fast_catch_points(time_taken=None, num_catches=catches)
-
-            parts = raw_score.replace("S", "").split("/")
-            if len(parts) == 2:
-                time_taken = float(parts[0].strip())
-                num_catches = float(parts[1].strip().replace("C", ""))
-                return calculate_fast_catch_points(time_taken, num_catches)
-
-            if raw_score.replace('.', '', 1).isdigit():
-                time_taken = float(raw_score)
-                return calculate_fast_catch_points(time_taken, 5)
-
-        except:
-            return 0
-
-    max_values = {
-        "Accuracy": 100,
-        "Aussie Round": 100,
-        "Maximum Time Aloft": 50,
-        "Endurance": 80,
-        "Trick Catch": 100
-    }
-
-    try:
-        score = float(raw_score)
-        if score < 0:
-            score = 0  # Clamp negative values to 0
-    except:
-        return 0
-
-    max_val = max_values.get(event, 100)
-    if score > max_val:
-        score = max_val
-
-    return math.floor(500 * math.log10(1 + 99 * score / max_val))
-
-
-
-
-
-def make_fair_competitive_groups(throwers_with_scores, num_groups=4):
-    sorted_throwers = sorted(throwers_with_scores, key=lambda x: -x[0])
-
-    print("\n[DEBUG] Sorted Throwers by Score (with Ranking):")
-    for rank, (score, t) in enumerate(sorted_throwers, start=1):
-        print(f"  Rank {rank:2}: {t[0]} {t[1]} - Score: {score}")
-
-    groups = [[] for _ in range(num_groups)]
-
-    total = len(sorted_throwers)
-    block_size = total // (2 * num_groups)
-    print(f"\n[DEBUG] Total throwers: {total}, Num groups: {num_groups}, Block size: {block_size}")
-
-    for g in range(num_groups):
-        top_start = g * block_size
-        bottom_start = total - (g + 1) * block_size
-
-        print(f"\n[DEBUG] Group {g + 1} (Top from index {top_start}, Bottom from index {bottom_start}):")
-
-        for i in range(block_size):
-            idx = top_start + i
-            if idx < total:
-                thrower = sorted_throwers[idx][1]
-                print(f"  Adding (Top)    Rank {idx + 1:2}: {thrower[0]} {thrower[1]}")
-                groups[g].append(thrower)
-
-        for i in range(block_size):
-            idx = bottom_start + i
-            if idx < total:
-                thrower = sorted_throwers[idx][1]
-                print(f"  Adding (Bottom) Rank {idx + 1:2}: {thrower[0]} {thrower[1]}")
-                groups[g].append(thrower)
-
-    used_indices = set()
-    for g in groups:
-        for p in g:
-            for i, (_, name) in enumerate(sorted_throwers):
-                if name == p:
-                    used_indices.add(i)
-
-    leftovers = [sorted_throwers[i][1] for i in range(total) if i not in used_indices]
-    print(f"\n[DEBUG] Leftovers ({len(leftovers)}): {[f'{t[0]} {t[1]}' for t in leftovers]}")
-    for i, p in enumerate(leftovers):
-        group_index = i % num_groups
-        print(f"  Adding leftover: {p[0]} {p[1]} to Group {group_index + 1}")
-        groups[group_index].append(p)
-
-    # === 🔄 Fix: Ensure restricted groups are in the same group using swaps ===
-    print("\n[DEBUG] Fixing Restricted Groups with Swapping:")
-    for tag, members in restricted_groups.items():
-        # Collect all full names
-        full_names = []
-        for item in members:
-            row_index = int(tree.item(item, "values")[0]) - 1
-            first_name, last_name, *_ = throwers[row_index]
-            full_names.append(f"{first_name} {last_name}")
-
-        # Map where each restricted thrower is
-        name_to_group_idx = {}
-        for i, group in enumerate(groups):
-            for thrower in group:
-                full_name = f"{thrower[0]} {thrower[1]}"
-                if full_name in full_names:
-                    name_to_group_idx[full_name] = i
-
-        unique_groups = set(name_to_group_idx.values())
-        if len(unique_groups) <= 1:
-            print(f"  ✅ Group already unified: {', '.join(full_names)}")
-            continue
-
-        # Choose the group with most restricted members as the target group
-        from collections import Counter
-        target_group = Counter(name_to_group_idx.values()).most_common(1)[0][0]
-        print(f"  ⚠️  Restricted group spans multiple groups. Merging into Group {target_group + 1}")
-
-        for full_name in full_names:
-            current_group = name_to_group_idx[full_name]
-            if current_group == target_group:
-                continue  # already in place
-
-            # Find the thrower object
-            thrower = next(t for t in groups[current_group] if f"{t[0]} {t[1]}" == full_name)
-
-            # Find a non-restricted person in target group to swap with
-            swap_candidate = None
-            for t in groups[target_group]:
-                t_name = f"{t[0]} {t[1]}"
-                if t_name not in full_names:
-                    swap_candidate = t
-                    break
-
-            if swap_candidate:
-                print(f"    🔄 Swapping {full_name} ↔ {swap_candidate[0]} {swap_candidate[1]}")
-                groups[current_group].remove(thrower)
-                groups[current_group].append(swap_candidate)
-                groups[target_group].remove(swap_candidate)
-                groups[target_group].append(thrower)
-            else:
-                print(f"    ❌ No swap candidate found in Group {target_group + 1}, moving {full_name} directly")
-                groups[current_group].remove(thrower)
-                groups[target_group].append(thrower)
-
-    print("\nReverse group order to have best throwers in last group")
-    # Ensure best throwers compete last in each group
-    # Reverse group order so strongest group is last
-    groups.reverse()
-    for group in groups:
-        group.reverse()
-
-    # === Final Group Print ===
-    print("\n[DEBUG] Final Groups:")
-    for i, group in enumerate(groups):
-        group_display = []
-        for t in group:
-            rank = next((r + 1 for r, (_, n) in enumerate(sorted_throwers) if n == t), "?")
-            group_display.append(f"{t[0]} {t[1]} (Rank {rank})")
-        print(f"  Group {i + 1}: {group_display}")
-
-    return groups
 
 
 
@@ -265,7 +42,7 @@ def save_accuracy_results():
         writer = csv.writer(file)
         writer.writerow(["Name", "Score"])
 
-        for thrower in throwers:
+        for thrower in config.throwers:
             full_name = f"{thrower[0]} {thrower[1]}"
             entry = score_entries.get((event, full_name))
             if entry:
@@ -305,7 +82,7 @@ def display_throwers(tree, throwers):
     for item in tree.get_children():
         tree.delete(item)
 
-    # Add numbered rows and the throwers data
+    # Add numbered rows and the config.throwers data
     for i, thrower in enumerate(throwers, start=1):
         tree.insert("", "end", values=(i, *thrower))
 
@@ -321,23 +98,23 @@ def add_thrower():
         messagebox.showerror("Input Error", "Please fill in all fields")
         return
 
-    throwers.append((first_name, last_name, nationality, category))
-    display_throwers(tree, throwers)
+    config.throwers.append((first_name, last_name, nationality, category))
+    display_throwers(config.tree, config.throwers)
     clear_entries()
     update_throwers_file()
 
 
 # Function to remove selected thrower
 def remove_thrower():
-    selected_item = tree.selection()
+    selected_item = config.tree.selection()
     if selected_item:
         confirmation = messagebox.askyesno("Delete Confirmation",
                                            "Are you sure you want to delete the selected thrower?")
         if confirmation:
             # Remove the corresponding thrower from the list using row index
-            index = tree.index(selected_item)
-            throwers.pop(index)
-            display_throwers(tree, throwers)
+            index = config.tree.index(selected_item)
+            config.throwers.pop(index)
+            display_throwers(config.tree, config.throwers)
             update_throwers_file()
         else:
             messagebox.showinfo("Delete Cancelled", "Deletion was cancelled.")
@@ -347,13 +124,13 @@ def remove_thrower():
 
 # Function to restrict a couple (or group) of throwers and color code them
 def restrict_couple():
-    selected_items = tree.selection()
+    selected_items = config.tree.selection()
     if len(selected_items) < 2:
         messagebox.showerror("Selection Error", "Please select at least two throwers to restrict")
         return
 
     # Check if any selected thrower is already part of a restricted group
-    already_restricted = [item for item in selected_items if any(item in group for group in restricted_groups.values())]
+    already_restricted = [item for item in selected_items if any(item in group for group in config.restricted_groups.values())]
     if already_restricted:
         messagebox.showerror("Restriction Error",
                              f"The following throwers are already part of a restricted group: {', '.join(str(i) for i in already_restricted)}")
@@ -362,10 +139,10 @@ def restrict_couple():
     # Create a unique tag for each restricted group
     group_tag = f"restricted_{random.randint(1000, 9999)}"  # Generate a random tag for the group
     for item in selected_items:
-        tree.item(item, tags=(group_tag,))
+        config.tree.item(item, tags=(group_tag,))
 
     # Add the group to the restricted groups dictionary
-    restricted_groups[group_tag] = selected_items  # Keep track of the restricted group
+    config.restricted_groups[group_tag] = selected_items  # Keep track of the restricted group
 
     # Generate a random background color for this group
     random_color = "#{:02x}{:02x}{:02x}".format(random.randint(100, 255), random.randint(100, 255),
@@ -378,7 +155,7 @@ def restrict_couple():
 
 # Function to set tags for color coding
 def set_tags(group_tag, color):
-    tree.tag_configure(group_tag, background=color, foreground="black")
+    config.tree.tag_configure(group_tag, background=color, foreground="black")
 
 
 # Function to clear the input fields
@@ -392,20 +169,20 @@ def clear_entries():
 # Function to update the throwers list file (input/throwers_list.txt)
 def update_throwers_file():
     with open("input/throwers_list.txt", "w", encoding="utf-8-sig") as file:
-        for thrower in throwers:
+        for thrower in config.throwers:
             file.write(" | ".join(thrower) + "\n")
 
 
 def update_restrictions_file():
     with open("input/restrictions.txt", "w", encoding="utf-8-sig") as file:
-        for group, members in restricted_groups.items():
+        for group, members in config.restricted_groups.items():
             # Loop through the selected members and match names from the throwers list
             member_names = []
             for item in members:
-                # Extract the row index based on the Treeview selection
+                # Extract the row index based on the config.treeview selection
                 # Get the first column value (row number) to use as index
-                row_index = int(tree.item(item, "values")[0]) - 1  # Adjust for zero-based indexing
-                first_name, last_name, _, _ = throwers[row_index]
+                row_index = int(config.tree.item(item, "values")[0]) - 1  # Adjust for zero-based indexing
+                first_name, last_name, _, _ = config.throwers[row_index]
                 member_names.append(f"{first_name} {last_name}")
             # Write the group of restricted throwers as a single line in the file
             file.write(f"[{', '.join(member_names)}]\n")
@@ -413,16 +190,16 @@ def update_restrictions_file():
 
 # Function to safely read the throwers file
 def read_throwers_safe(file_path):
-    throwers = []
+    config.throwers = []
     try:
         with open(file_path, "r", encoding="utf-8-sig", errors="ignore") as file:
             for line in file:
                 thrower = line.strip().split(" | ")
                 if len(thrower) == 4:  # Ensure the line has the correct number of columns
-                    throwers.append(thrower)
+                    config.throwers.append(thrower)
     except Exception as e:
         messagebox.showerror("File Read Error", f"Error reading file: {str(e)}")
-    return throwers
+    return config.throwers
 
 
 
@@ -441,16 +218,16 @@ def load_restrictions():
                 group_items = []  # Store Treeview item IDs for this group
 
                 for member in members:
-                    for i, thrower in enumerate(throwers):
+                    for i, thrower in enumerate(config.throwers):
                         if f"{thrower[0]} {thrower[1]}" == member:
-                            item_id = tree.get_children()[i]
-                            tree.item(item_id, tags=(group_tag,))
+                            item_id = config.tree.get_children()[i]
+                            config.tree.item(item_id, tags=(group_tag,))
                             group_items.append(item_id)
                             break
 
                 if group_items:
                     set_tags(group_tag, random_color)
-                    restricted_groups[group_tag] = group_items  # ✅ Add to global tracking
+                    config.restricted_groups[group_tag] = group_items  # ✅ Add to global tracking
 
     except FileNotFoundError:
         print("No restrictions file found.")
@@ -466,12 +243,12 @@ def load_restrictions():
 
 def update_restrictions_file():
     with open("input/restrictions.txt", "w", encoding="utf-8-sig") as file:
-        for group, members in restricted_groups.items():
+        for group, members in config.restricted_groups.items():
             # Fetch the names of throwers from the list using their index in Treeview
             member_names = []
             for item in members:
-                row_index = int(tree.item(item, "values")[0]) - 1  # Adjust for zero-based indexing
-                first_name, last_name, _, _ = throwers[row_index]
+                row_index = int(config.tree.item(item, "values")[0]) - 1  # Adjust for zero-based indexing
+                first_name, last_name, _, _ = config.throwers[row_index]
                 member_names.append(f"{first_name} {last_name}")
             # Write the group of restricted throwers as a single line in the file
             file.write(f"[{', '.join(member_names)}]\n")
@@ -481,22 +258,22 @@ def update_restrictions_file():
 
 
 def remove_restriction():
-    selected_item = tree.selection()
+    selected_item = config.tree.selection()
     if selected_item:
         selected_item = selected_item[0]  # Always unpack tuple first
-        tags = tree.item(selected_item)["tags"]
+        tags = config.tree.item(selected_item)["tags"]
         if not tags:
             messagebox.showinfo("No Restriction", "This thrower is not part of any restricted group.")
             return
 
         group_tag = tags[0]
-        if group_tag in restricted_groups:
-            del restricted_groups[group_tag]
-            tree.tag_configure(group_tag, background="", foreground="")
+        if group_tag in config.restricted_groups:
+            del config.restricted_groups[group_tag]
+            config.tree.tag_configure(group_tag, background="", foreground="")
             # Remove tag from all items in that group
-            for item in tree.get_children():
-                if group_tag in tree.item(item, "tags"):
-                    current_tags = list(tree.item(item, "tags"))
+            for item in config.tree.get_children():
+                if group_tag in config.tree.item(item, "tags"):
+                    current_tags = list(config.tree.item(item, "tags"))
                     current_tags.remove(group_tag)
                     tree.item(item, tags=tuple(current_tags))
             update_restrictions_file()
@@ -520,27 +297,28 @@ throwers_tab = ttk.Frame(notebook)
 notebook.add(throwers_tab, text="Throwers List")
 
 # Create Treeview for throwers display
-tree = ttk.Treeview(throwers_tab, columns=("No.", "First Name", "Last Name", "Nationality", "Category"),
-                    show="headings", height=10)
-tree.heading("No.", text="No.")
-tree.heading("First Name", text="First Name")
-tree.heading("Last Name", text="Last Name")
-tree.heading("Nationality", text="Nationality")
-tree.heading("Category", text="Category")
-tree.pack(fill="both", expand=True, padx=10, pady=10)
+# tree = ttk.Treeview(throwers_tab, columns=("No.", "First Name", "Last Name", "Nationality", "Category"),
+#                     show="headings", height=10)
+config.tree.heading("No.", text="No.")
+config.tree.heading("First Name", text="First Name")
+config.tree.heading("Last Name", text="Last Name")
+config.tree.heading("Nationality", text="Nationality")
+config.tree.heading("Category", text="Category")
+config.tree.pack(fill="both", expand=True, padx=10, pady=10)
 
 # Add style for restricted throwers (color code them)
-restricted_groups = {}  # Dictionary to keep track of restricted groups with their tags
+# config.restricted_groups = {}  # Dictionary to keep track of restricted groups with their tags
 
 # Load throwers from file
 file_path = "input/throwers_list.txt"  # Adjust the path as needed
-throwers = read_throwers_safe(file_path)
+config.throwers = read_throwers_safe(file_path)
 
 # Display throwers in the Treeview
-display_throwers(tree, throwers)
+display_throwers(config.tree, config.throwers)
 
 # Load restrictions and apply colors on startup
 load_restrictions()
+print("restrictions: ", config.restricted_groups)
 
 # Add UI components for adding/removing throwers
 add_frame = tk.Frame(throwers_tab)
@@ -579,18 +357,18 @@ remove_restriction_button = tk.Button(button_frame, text="Remove Restriction", c
 remove_restriction_button.grid(row=1, column=0, padx=10)
 
 # Bind the event to select a row for removal
-tree.bind("<ButtonRelease-1>", lambda event: tree.selection())
+config.tree.bind("<ButtonRelease-1>", lambda event: config.tree.selection())
 
 
 # === Helper: Check if two throwers are restricted ===
 def are_restricted(t1, t2):
     name1 = f"{t1[0]} {t1[1]}"
     name2 = f"{t2[0]} {t2[1]}"
-    for group in restricted_groups.values():
+    for group in config.restricted_groups.values():
         names = []
         for item in group:
-            row_index = int(tree.item(item, "values")[0]) - 1
-            fn, ln, _, _ = throwers[row_index]
+            row_index = int(config.tree.item(item, "values")[0]) - 1
+            fn, ln, _, _ = config.throwers[row_index]
             names.append(f"{fn} {ln}")
         if name1 in names and name2 in names:
             return True
@@ -888,7 +666,7 @@ def update_total_points_tab():
     tk.Label(summary_frame, text="Total", font=("Helvetica", 12, "bold")).grid(row=0, column=len(current_event_order) + 1, padx=10, pady=5, sticky="w")
 
 
-    for i, thrower in enumerate(throwers):
+    for i, thrower in enumerate(config.throwers):
         full_name = f"{thrower[0]} {thrower[1]}"
         raw_scores = total_scores.get(full_name, [0] * len(current_event_order))
 
@@ -935,7 +713,7 @@ def next_event_grouping():
 
     # Step 4: Build (score, thrower) list using updated total scores
     thrower_scores = []
-    for thrower in throwers:
+    for thrower in config.throwers:
         full_name = f"{thrower[0]} {thrower[1]}"
         total = total_scores.get(full_name, [0] * (len(current_event_order) + 1))[-1]
         thrower_scores.append((total, thrower))
@@ -968,10 +746,10 @@ def create_event_group_tab(event_name, thrower_list):
     group_tab = ttk.Frame(circles_notebook)
     circles_notebook.add(group_tab, text=f"{event_name} Circles")
 
-    tree = ttk.Treeview(group_tab, columns=("Circle", "First Name", "Last Name", "Nationality", "Category"), show="headings")
-    for col in tree["columns"]:
-        tree.heading(col, text=col)
-    tree.pack(fill="both", expand=True, padx=10, pady=10)
+    config.tree = ttk.Treeview(group_tab, columns=("Circle", "First Name", "Last Name", "Nationality", "Category"), show="headings")
+    for col in config.tree["columns"]:
+        config.tree.heading(col, text=col)
+    config.tree.pack(fill="both", expand=True, padx=10, pady=10)
 
     # Get number of circles for this event
     num_circles = event_circle_counts.get(event_name, 3)
@@ -983,7 +761,7 @@ def create_event_group_tab(event_name, thrower_list):
 
     for i, group in enumerate(groups, start=1):
         for thrower in group:
-            tree.insert("", "end", values=(f"Circle {i}", *thrower))
+            config.tree.insert("", "end", values=(f"Circle {i}", *thrower))
 
 
 
@@ -999,7 +777,7 @@ def save_accuracy_results():
         writer = csv.writer(file)
         writer.writerow(["Name", "Score"])
 
-        for thrower in throwers:
+        for thrower in config.throwers:
             full_name = f"{thrower[0]} {thrower[1]}"
             entry = score_entries.get((event, full_name))
             if entry:
@@ -1044,7 +822,7 @@ def update_total_points_tab():
         tk.Label(frame, text=title, font=("Helvetica", 12, "bold")).grid(row=0, column=j, padx=5, pady=5, sticky="w")
 
     scores_list = []
-    for thrower in throwers:
+    for thrower in config.throwers:
         full_name = f"{thrower[0]} {thrower[1]}"
         scores = total_scores.get(full_name, [0] * (len(current_event_order) + 1))
         scores_list.append((scores[-1], full_name, scores))
@@ -1067,7 +845,7 @@ def save_event_results(event, summary_lines=None):
         writer = csv.writer(file)
         writer.writerow(["Name", "Score"])
 
-        for thrower in throwers:
+        for thrower in config.throwers:
             full_name = f"{thrower[0]} {thrower[1]}"
             entry = score_entries.get((event, full_name))
             if entry:
@@ -1092,7 +870,7 @@ def save_event_results(event, summary_lines=None):
 
     # Collect scores
     event_scores = {}
-    for thrower in throwers:
+    for thrower in config.throwers:
         full_name = f"{thrower[0]} {thrower[1]}"
         entry = score_entries.get((event, full_name))
         score = entry.get().strip() if entry else "0"
@@ -1123,7 +901,7 @@ def create_score_tab(event):
     tk.Label(scrollable_frame, text="Thrower Name", font=("Helvetica", 12, "bold")).grid(row=0, column=0, padx=10, pady=5, sticky="w")
     tk.Label(scrollable_frame, text="Score", font=("Helvetica", 12, "bold")).grid(row=0, column=1, padx=10, pady=5, sticky="w")
 
-    for i, thrower in enumerate(throwers):
+    for i, thrower in enumerate(config.throwers):
         full_name = f"{thrower[0]} {thrower[1]}"
         tk.Label(scrollable_frame, text=full_name, font=("Helvetica", 11)).grid(row=i + 1, column=0, sticky="w", padx=10, pady=2)
         entry = tk.Entry(scrollable_frame, width=10)
@@ -1132,7 +910,7 @@ def create_score_tab(event):
         score_entries[(event, full_name)] = entry
 
     button_bar = tk.Frame(scrollable_frame)
-    button_bar.grid(row=len(throwers) + 2, column=0, columnspan=2, pady=10)
+    button_bar.grid(row=len(config.throwers) + 2, column=0, columnspan=2, pady=10)
 
     save_btn = tk.Button(button_bar, text="Save Results", command=lambda e=event: save_event_results(e))
     save_btn.pack(side="left", padx=10)
@@ -1140,7 +918,7 @@ def create_score_tab(event):
     next_group_btn = tk.Button(button_bar, text="Next Event Grouping", command=next_event_grouping)
     next_group_btn.pack(side="left", padx=10)
 
-    create_event_group_tab(event, throwers)
+    create_event_group_tab(event, config.throwers)
 
 
 def create_score_tab_for_first_event_and_summary():
@@ -1171,7 +949,7 @@ def create_score_tab_for_first_event_and_summary():
     tk.Label(scrollable_frame, text="Thrower Name", font=("Helvetica", 12, "bold")).grid(row=0, column=0, padx=10, pady=5, sticky="w")
     tk.Label(scrollable_frame, text="Score", font=("Helvetica", 12, "bold")).grid(row=0, column=1, padx=10, pady=5, sticky="w")
 
-    for i, thrower in enumerate(throwers):
+    for i, thrower in enumerate(config.throwers):
         full_name = f"{thrower[0]} {thrower[1]}"
         tk.Label(scrollable_frame, text=full_name, font=("Helvetica", 11)).grid(row=i + 1, column=0, sticky="w", padx=10, pady=2)
         entry = tk.Entry(scrollable_frame, width=10)
@@ -1207,7 +985,7 @@ def create_score_tab_for_first_event_and_summary():
     tk.Label(summary_frame, text="Total", font=("Helvetica", 12, "bold")).grid(row=0, column=len(current_event_order) + 1, padx=10, pady=5, sticky="w")
 
     # Data Rows
-    for i, thrower in enumerate(throwers):
+    for i, thrower in enumerate(config.throwers):
         full_name = f"{thrower[0]} {thrower[1]}"
         tk.Label(summary_frame, text=full_name, font=("Helvetica", 11)).grid(row=i + 1, column=0, sticky="w", padx=10, pady=2)
 
@@ -1220,14 +998,14 @@ def create_score_tab_for_first_event_and_summary():
         )
 
     button_bar = tk.Frame(scrollable_frame)
-    button_bar.grid(row=len(throwers) + 2, column=0, columnspan=2, pady=10)
+    button_bar.grid(row=len(config.throwers) + 2, column=0, columnspan=2, pady=10)
 
     save_btn = tk.Button(button_bar, text="Save Results", command=save_accuracy_results)
     save_btn.pack(side="left", padx=10)
 
     next_event_btn = tk.Button(button_bar, text="Next Event Grouping", command=next_event_grouping)
     next_event_btn.pack(side="left", padx=10)
-    create_event_group_tab(first_event, throwers)
+    create_event_group_tab(first_event, config.throwers)
 
 
 added_score_tabs = set()  # global or module-level set
