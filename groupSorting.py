@@ -56,6 +56,7 @@ def make_fair_competitive_groups(throwers_with_scores, num_groups=4):
         # Collect all full names
         full_names = []
         for item in members:
+            print("DEBUG", config.tree.item(item, "values")[0],int(config.tree.item(item, "values")[0])  )
             row_index = int(config.tree.item(item, "values")[0]) - 1
             first_name, last_name, *_ = config.throwers[row_index]
             full_names.append(f"{first_name} {last_name}")

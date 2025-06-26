@@ -15,5 +15,6 @@ website_credentials = {
 
 throwers = []
 restricted_groups = {}  # Dictionary to keep track of restricted groups with their tags
-tree = ttk.Treeview(throwers_tab, columns=("No.", "First Name", "Last Name", "Nationality", "Category"),
-                    show="headings", height=10)
+throwers_tab = None
+tree = None
+

@@ -259,6 +259,7 @@ def update_restrictions_file():
 
 def remove_restriction():
     selected_item = config.tree.selection()
+    print(selected_item)
     if selected_item:
         selected_item = selected_item[0]  # Always unpack tuple first
         tags = config.tree.item(selected_item)["tags"]
@@ -275,7 +276,7 @@ def remove_restriction():
                 if group_tag in config.tree.item(item, "tags"):
                     current_tags = list(config.tree.item(item, "tags"))
                     current_tags.remove(group_tag)
-                    tree.item(item, tags=tuple(current_tags))
+                    config.tree.item(item, tags=tuple(current_tags))
             update_restrictions_file()
         else:
             messagebox.showinfo("No Restriction", "This thrower is not part of any restricted group.")
@@ -283,7 +284,7 @@ def remove_restriction():
         messagebox.showerror("Selection Error", "Please select a thrower to remove the restriction.")
 
 
-
+print("AAA")
 # GUI setup
 root = tk.Tk()
 root.title("Boomerang Tournament Manager")
@@ -293,18 +294,20 @@ notebook = ttk.Notebook(root)
 notebook.pack(fill="both", expand=True)
 
 # Create throwers list tab
-throwers_tab = ttk.Frame(notebook)
-notebook.add(throwers_tab, text="Throwers List")
+config.throwers_tab = ttk.Frame(notebook)
+notebook.add(config.throwers_tab, text="Throwers List")
 
 # Create Treeview for throwers display
-# tree = ttk.Treeview(throwers_tab, columns=("No.", "First Name", "Last Name", "Nationality", "Category"),
-#                     show="headings", height=10)
+config.tree = ttk.Treeview(config.throwers_tab, columns=("No.", "First Name", "Last Name", "Nationality", "Category"),
+                    show="headings", height=10)
 config.tree.heading("No.", text="No.")
 config.tree.heading("First Name", text="First Name")
 config.tree.heading("Last Name", text="Last Name")
 config.tree.heading("Nationality", text="Nationality")
 config.tree.heading("Category", text="Category")
 config.tree.pack(fill="both", expand=True, padx=10, pady=10)
+
+print("BBB")
 
 # Add style for restricted throwers (color code them)
 # config.restricted_groups = {}  # Dictionary to keep track of restricted groups with their tags
@@ -321,7 +324,7 @@ load_restrictions()
 print("restrictions: ", config.restricted_groups)
 
 # Add UI components for adding/removing throwers
-add_frame = tk.Frame(throwers_tab)
+add_frame = tk.Frame(config.throwers_tab)
 add_frame.pack(pady=10)
 
 tk.Label(add_frame, text="First Name:").grid(row=0, column=0, padx=5)
@@ -341,7 +344,7 @@ category_entry = tk.Entry(add_frame)
 category_entry.grid(row=3, column=1, padx=5)
 
 # Buttons for add, remove, and restrict
-button_frame = tk.Frame(throwers_tab)
+button_frame = tk.Frame(config.throwers_tab)
 button_frame.pack(pady=10)
 
 add_button = tk.Button(button_frame, text="Add Thrower", command=add_thrower)
@@ -352,6 +355,10 @@ remove_button.grid(row=0, column=1, padx=10)
 
 restrict_button = tk.Button(button_frame, text="Restrict Couple/Group", command=restrict_couple)
 restrict_button.grid(row=0, column=2, padx=10)
+
+if config.tree is None:
+    print("Tree is not initialized yet!")
+
 
 remove_restriction_button = tk.Button(button_frame, text="Remove Restriction", command=remove_restriction)
 remove_restriction_button.grid(row=1, column=0, padx=10)
