@@ -18,7 +18,8 @@ from CalculateScoreRelative import *
 from groupSorting import *
 from ThrowersPage import *
 from Credentials import *
-
+from EventOrder import *
+from EventOrder import add_event, remove_event
 
 load_website_credentials()
 
@@ -211,75 +212,28 @@ additional_events = [
 event_order_tab = ttk.Frame(notebook)
 notebook.add(event_order_tab, text="Event Order")
 
-event_frame = tk.Frame(event_order_tab)
-event_frame.pack(pady=10)
+config.event_frame = tk.Frame(event_order_tab)
+config.event_frame.pack(pady=10)
 
 # Header row
-tk.Label(event_frame, text="#", font=("Helvetica", 12, "bold")).grid(row=0, column=0, padx=10)
-tk.Label(event_frame, text="Event", font=("Helvetica", 12, "bold")).grid(row=0, column=1, padx=10)
-tk.Label(event_frame, text="Circles", font=("Helvetica", 12, "bold")).grid(row=0, column=2, padx=10)
+tk.Label(config.event_frame, text="#", font=("Helvetica", 12, "bold")).grid(row=0, column=0, padx=10)
+tk.Label(config.event_frame, text="Event", font=("Helvetica", 12, "bold")).grid(row=0, column=1, padx=10)
+tk.Label(config.event_frame, text="Circles", font=("Helvetica", 12, "bold")).grid(row=0, column=2, padx=10)
 
-def on_event_row_click(index):
-    # global config.selected_event_index
-    config.selected_event_index = index
-    refresh_event_listboxes()
 
-def refresh_event_listboxes():
-    # global config.selected_event_index
-    for widget in event_frame.grid_slaves():
-        if int(widget.grid_info()["row"]) > 0:
-            widget.destroy()
-    config.circle_entries.clear()
-
-    for idx, event in enumerate(config.current_event_order):
-        # Row number
-        tk.Label(event_frame, text=str(idx + 1), font=("Helvetica", 11)).grid(
-            row=idx + 1, column=0, padx=10, pady=2, sticky="w"
-        )
-
-        # Event name (clickable)
-        label = tk.Label(event_frame, text=event, font=("Helvetica", 11),
-                         width=25, anchor="w", bg="white")
-        if config.selected_event_index == idx:
-            label.config(bg="#d0ebff")  # Highlight selected
-        label.grid(row=idx + 1, column=1, padx=10, pady=2, sticky="w")
-        label.bind("<Button-1>", lambda e, i=idx: on_event_row_click(i))
-
-        # Circle count entry
-        entry = tk.Entry(event_frame, width=5, font=("Helvetica", 11))
-        entry.insert(0, str(config.event_circle_counts.get(event, 3)))
-        entry.grid(row=idx + 1, column=2, padx=10, pady=2, sticky="w")
-        config.circle_entries.append(entry)
 
 # === Add / Remove ===
 add_frame = tk.Frame(event_order_tab)
 add_frame.pack(pady=(5, 0))
 
-event_var = tk.StringVar(value=additional_events[0])
-event_dropdown = ttk.Combobox(add_frame, textvariable=event_var,
+config.event_var = tk.StringVar(value=additional_events[0])
+event_dropdown = ttk.Combobox(add_frame, textvariable=config.event_var,
                               values=additional_events, state="readonly", width=25)
 event_dropdown.grid(row=0, column=0, padx=5)
 
-def add_event():
-    new_event = event_var.get()
-    if new_event not in config.current_event_order:
-        config.current_event_order.append(new_event)
-        config.event_circle_counts[new_event] = 3
-        refresh_event_listboxes()
-    else:
-        messagebox.showinfo("Duplicate", f"{new_event} is already in the list.")
 
 tk.Button(add_frame, text="Add Event", command=add_event).grid(row=0, column=1, padx=5)
 
-def remove_event():
-    # global config.selected_event_index
-    if config.selected_event_index is not None:
-        removed_event = config.current_event_order.pop(config.selected_event_index)
-        config.event_circle_counts.pop(removed_event, None)
-        config.selected_event_index = None
-        refresh_event_listboxes()
-    else:
-        messagebox.showerror("Select Row", "Click on an event row to select it before removing.")
 
 tk.Button(add_frame, text="Remove Selected", command=remove_event).grid(row=0, column=2, padx=5)
 
@@ -287,75 +241,6 @@ tk.Button(add_frame, text="Remove Selected", command=remove_event).grid(row=0, c
 control_frame = tk.Frame(event_order_tab)
 control_frame.pack(pady=5)
 
-def move_event_up():
-    # global selected_event_index
-    if config.selected_event_index is None or config.selected_event_index == 0:
-        return
-
-    i = config.selected_event_index
-
-    # Capture current circle values
-    circles = []
-    for entry in config.circle_entries:
-        try:
-            val = int(entry.get())
-        except ValueError:
-            val = 3
-        circles.append(val)
-
-    # Swap events and circle values
-    config.current_event_order[i - 1], config.current_event_order[i] = config.current_event_order[i], config.current_event_order[i - 1]
-    circles[i - 1], circles[i] = circles[i], circles[i - 1]
-
-    # Update config.event_circle_counts
-    for idx, event in enumerate(config.current_event_order):
-        config.event_circle_counts[event] = circles[idx]
-
-    config.selected_event_index -= 1
-    refresh_event_listboxes()
-
-
-def move_event_down():
-    # global config.selected_event_index
-    if config.selected_event_index is None or config.selected_event_index >= len(config.current_event_order) - 1:
-        return
-
-    i = config.selected_event_index
-
-    # Capture current circle values
-    circles = []
-    for entry in config.circle_entries:
-        try:
-            val = int(entry.get())
-        except ValueError:
-            val = 3
-        circles.append(val)
-
-    # Swap events and circle values
-    config.current_event_order[i], config.current_event_order[i + 1] = config.current_event_order[i + 1], config.current_event_order[i]
-    circles[i], circles[i + 1] = circles[i + 1], circles[i]
-
-    # Update config.event_circle_counts
-    for idx, event in enumerate(config.current_event_order):
-        config.event_circle_counts[event] = circles[idx]
-
-    config.selected_event_index += 1
-    refresh_event_listboxes()
-
-
-def save_event_order():
-    for i, event in enumerate(config.current_event_order):
-        try:
-            circles = int(config.circle_entries[i].get())
-        except ValueError:
-            circles = 3
-        config.event_circle_counts[event] = circles
-
-    with open("input/event_order.txt", "w", encoding="utf-8") as f:
-        for event in config.current_event_order:
-            f.write(f"{event}|{config.event_circle_counts[event]}\n")
-
-    messagebox.showinfo("Saved", "Event order saved to input/event_order.txt")
 
 tk.Button(control_frame, text="Move Up", command=move_event_up).grid(row=0, column=0, padx=10)
 tk.Button(control_frame, text="Move Down", command=move_event_down).grid(row=0, column=1, padx=10)

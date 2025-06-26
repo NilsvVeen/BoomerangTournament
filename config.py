@@ -38,3 +38,6 @@ username_entry = None
 app_password_entry = None
 base_url_entry = None
 tournament_slug_entry = None
+
+event_var = None
+event_frame = None
