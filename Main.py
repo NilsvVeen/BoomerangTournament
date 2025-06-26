@@ -124,19 +124,19 @@ remove_restriction_button.grid(row=1, column=0, padx=10)
 config.tree.bind("<ButtonRelease-1>", lambda event: config.tree.selection())
 
 
-# === Helper: Check if two throwers are restricted ===
-def are_restricted(t1, t2):
-    name1 = f"{t1[0]} {t1[1]}"
-    name2 = f"{t2[0]} {t2[1]}"
-    for group in config.restricted_groups.values():
-        names = []
-        for item in group:
-            row_index = int(config.tree.item(item, "values")[0]) - 1
-            fn, ln, _, _ = config.throwers[row_index]
-            names.append(f"{fn} {ln}")
-        if name1 in names and name2 in names:
-            return True
-    return False
+# # === Helper: Check if two throwers are restricted ===
+# def are_restricted(t1, t2):
+#     name1 = f"{t1[0]} {t1[1]}"
+#     name2 = f"{t2[0]} {t2[1]}"
+#     for group in config.restricted_groups.values():
+#         names = []
+#         for item in group:
+#             row_index = int(config.tree.item(item, "values")[0]) - 1
+#             fn, ln, _, _ = config.throwers[row_index]
+#             names.append(f"{fn} {ln}")
+#         if name1 in names and name2 in names:
+#             return True
+#     return False
 
 
 # === Website Connection Tab ===
@@ -308,7 +308,7 @@ control_frame.pack(pady=5)
 
 def move_event_up():
     # global selected_event_index
-    if selected_event_index is None or config.selected_event_index == 0:
+    if config.selected_event_index is None or config.selected_event_index == 0:
         return
 
     i = config.selected_event_index
