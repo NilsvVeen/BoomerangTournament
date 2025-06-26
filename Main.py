@@ -33,42 +33,12 @@ load_website_credentials()
 
 
 
-def save_accuracy_results():
-    event = current_event_order[0]
-    folder = "output"
-    os.makedirs(folder, exist_ok=True)
-    filename = os.path.join(folder, f"{event.lower().replace(' ', '_')}_results.csv")
-
-    with open(filename, "w", newline="", encoding="utf-8") as file:
-        writer = csv.writer(file)
-        writer.writerow(["Name", "Score"])
-
-        for thrower in config.throwers:
-            full_name = f"{thrower[0]} {thrower[1]}"
-            entry = score_entries.get((event, full_name))
-            if entry:
-                try:
-                    score = int(entry.get())
-                except ValueError:
-                    score = 0
-
-                writer.writerow([full_name, score])
-
-                if full_name not in total_scores:
-                    total_scores[full_name] = [0] * len(current_event_order)
-                event_index = current_event_order.index(event)
-                converted_score = calculate_event_points(event, score)
-                total_scores[full_name][event_index] = converted_score
-                total_scores[full_name][-1:] = [sum(total_scores[full_name][:-1])]
-
-    update_total_points_tab()
-    messagebox.showinfo("Saved", f"{event} scores saved to {filename}")
 
 
 
 
-score_entries = {}  # Format: { (event, full_name): entry_widget }
-total_scores = {}   # Format: { full_name: [score_per_event, ..., total] }
+# score_entries = {}  # Format: { (event, full_name): entry_widget }
+# total_scores = {}   # Format: { full_name: [score_per_event, ..., total] }
 
 
 
@@ -95,7 +65,6 @@ config.tree.heading("Nationality", text="Nationality")
 config.tree.heading("Category", text="Category")
 config.tree.pack(fill="both", expand=True, padx=10, pady=10)
 
-print("BBB")
 
 # Add style for restricted throwers (color code them)
 # config.restricted_groups = {}  # Dictionary to keep track of restricted groups with their tags
@@ -226,10 +195,10 @@ tk.Button(button_frame, text="Reload From File", command=load_credentials_to_fie
 # === Event Order Tab ===
 
 # State storage
-current_event_order = []
-event_circle_counts = {}
-selected_event_index = None
-circle_entries = []
+# current_event_order = []
+# event_circle_counts = {}
+# selected_event_index = None
+# circle_entries = []
 
 # Load from file
 if os.path.exists("input/event_order.txt"):
@@ -238,18 +207,18 @@ if os.path.exists("input/event_order.txt"):
             parts = line.strip().split("|")
             if len(parts) == 2:
                 event, circles = parts
-                current_event_order.append(event)
-                event_circle_counts[event] = int(circles)
+                config.current_event_order.append(event)
+                config.event_circle_counts[event] = int(circles)
             else:
                 event = parts[0]
-                current_event_order.append(event)
-                event_circle_counts[event] = 3
+                config.current_event_order.append(event)
+                config.event_circle_counts[event] = 3
 else:
-    current_event_order = [
+    config.current_event_order = [
         "Accuracy", "Fast Catch", "Endurance", "Maximum Time Aloft",
         "Trick Catch", "Aussie Round 50"
     ]
-    event_circle_counts = {e: 3 for e in current_event_order}
+    config.event_circle_counts = {e: 3 for e in config.current_event_order}
 
 additional_events = [
     "Accuracy", "Fast Catch", "Endurance", "Maximum Time Aloft", "Trick Catch",
@@ -270,18 +239,18 @@ tk.Label(event_frame, text="Event", font=("Helvetica", 12, "bold")).grid(row=0, 
 tk.Label(event_frame, text="Circles", font=("Helvetica", 12, "bold")).grid(row=0, column=2, padx=10)
 
 def on_event_row_click(index):
-    global selected_event_index
-    selected_event_index = index
+    # global config.selected_event_index
+    config.selected_event_index = index
     refresh_event_listboxes()
 
 def refresh_event_listboxes():
-    global selected_event_index
+    # global config.selected_event_index
     for widget in event_frame.grid_slaves():
         if int(widget.grid_info()["row"]) > 0:
             widget.destroy()
-    circle_entries.clear()
+    config.circle_entries.clear()
 
-    for idx, event in enumerate(current_event_order):
+    for idx, event in enumerate(config.current_event_order):
         # Row number
         tk.Label(event_frame, text=str(idx + 1), font=("Helvetica", 11)).grid(
             row=idx + 1, column=0, padx=10, pady=2, sticky="w"
@@ -290,16 +259,16 @@ def refresh_event_listboxes():
         # Event name (clickable)
         label = tk.Label(event_frame, text=event, font=("Helvetica", 11),
                          width=25, anchor="w", bg="white")
-        if selected_event_index == idx:
+        if config.selected_event_index == idx:
             label.config(bg="#d0ebff")  # Highlight selected
         label.grid(row=idx + 1, column=1, padx=10, pady=2, sticky="w")
         label.bind("<Button-1>", lambda e, i=idx: on_event_row_click(i))
 
         # Circle count entry
         entry = tk.Entry(event_frame, width=5, font=("Helvetica", 11))
-        entry.insert(0, str(event_circle_counts.get(event, 3)))
+        entry.insert(0, str(config.event_circle_counts.get(event, 3)))
         entry.grid(row=idx + 1, column=2, padx=10, pady=2, sticky="w")
-        circle_entries.append(entry)
+        config.circle_entries.append(entry)
 
 # === Add / Remove ===
 add_frame = tk.Frame(event_order_tab)
@@ -312,9 +281,9 @@ event_dropdown.grid(row=0, column=0, padx=5)
 
 def add_event():
     new_event = event_var.get()
-    if new_event not in current_event_order:
-        current_event_order.append(new_event)
-        event_circle_counts[new_event] = 3
+    if new_event not in config.current_event_order:
+        config.current_event_order.append(new_event)
+        config.event_circle_counts[new_event] = 3
         refresh_event_listboxes()
     else:
         messagebox.showinfo("Duplicate", f"{new_event} is already in the list.")
@@ -322,11 +291,11 @@ def add_event():
 tk.Button(add_frame, text="Add Event", command=add_event).grid(row=0, column=1, padx=5)
 
 def remove_event():
-    global selected_event_index
-    if selected_event_index is not None:
-        removed_event = current_event_order.pop(selected_event_index)
-        event_circle_counts.pop(removed_event, None)
-        selected_event_index = None
+    # global config.selected_event_index
+    if config.selected_event_index is not None:
+        removed_event = config.current_event_order.pop(config.selected_event_index)
+        config.event_circle_counts.pop(removed_event, None)
+        config.selected_event_index = None
         refresh_event_listboxes()
     else:
         messagebox.showerror("Select Row", "Click on an event row to select it before removing.")
@@ -338,15 +307,15 @@ control_frame = tk.Frame(event_order_tab)
 control_frame.pack(pady=5)
 
 def move_event_up():
-    global selected_event_index
-    if selected_event_index is None or selected_event_index == 0:
+    # global selected_event_index
+    if selected_event_index is None or config.selected_event_index == 0:
         return
 
-    i = selected_event_index
+    i = config.selected_event_index
 
     # Capture current circle values
     circles = []
-    for entry in circle_entries:
+    for entry in config.circle_entries:
         try:
             val = int(entry.get())
         except ValueError:
@@ -354,27 +323,27 @@ def move_event_up():
         circles.append(val)
 
     # Swap events and circle values
-    current_event_order[i - 1], current_event_order[i] = current_event_order[i], current_event_order[i - 1]
+    config.current_event_order[i - 1], config.current_event_order[i] = config.current_event_order[i], config.current_event_order[i - 1]
     circles[i - 1], circles[i] = circles[i], circles[i - 1]
 
-    # Update event_circle_counts
-    for idx, event in enumerate(current_event_order):
-        event_circle_counts[event] = circles[idx]
+    # Update config.event_circle_counts
+    for idx, event in enumerate(config.current_event_order):
+        config.event_circle_counts[event] = circles[idx]
 
-    selected_event_index -= 1
+    config.selected_event_index -= 1
     refresh_event_listboxes()
 
 
 def move_event_down():
-    global selected_event_index
-    if selected_event_index is None or selected_event_index >= len(current_event_order) - 1:
+    # global config.selected_event_index
+    if config.selected_event_index is None or config.selected_event_index >= len(config.current_event_order) - 1:
         return
 
-    i = selected_event_index
+    i = config.selected_event_index
 
     # Capture current circle values
     circles = []
-    for entry in circle_entries:
+    for entry in config.circle_entries:
         try:
             val = int(entry.get())
         except ValueError:
@@ -382,28 +351,28 @@ def move_event_down():
         circles.append(val)
 
     # Swap events and circle values
-    current_event_order[i], current_event_order[i + 1] = current_event_order[i + 1], current_event_order[i]
+    config.current_event_order[i], config.current_event_order[i + 1] = config.current_event_order[i + 1], config.current_event_order[i]
     circles[i], circles[i + 1] = circles[i + 1], circles[i]
 
-    # Update event_circle_counts
-    for idx, event in enumerate(current_event_order):
-        event_circle_counts[event] = circles[idx]
+    # Update config.event_circle_counts
+    for idx, event in enumerate(config.current_event_order):
+        config.event_circle_counts[event] = circles[idx]
 
-    selected_event_index += 1
+    config.selected_event_index += 1
     refresh_event_listboxes()
 
 
 def save_event_order():
-    for i, event in enumerate(current_event_order):
+    for i, event in enumerate(config.current_event_order):
         try:
-            circles = int(circle_entries[i].get())
+            circles = int(config.circle_entries[i].get())
         except ValueError:
             circles = 3
-        event_circle_counts[event] = circles
+        config.event_circle_counts[event] = circles
 
     with open("input/event_order.txt", "w", encoding="utf-8") as f:
-        for event in current_event_order:
-            f.write(f"{event}|{event_circle_counts[event]}\n")
+        for event in config.current_event_order:
+            f.write(f"{event}|{config.event_circle_counts[event]}\n")
 
     messagebox.showinfo("Saved", "Event order saved to input/event_order.txt")
 
@@ -456,20 +425,20 @@ def update_total_points_tab():
 
     # Headers
     tk.Label(summary_frame, text="Thrower Name", font=("Helvetica", 12, "bold")).grid(row=0, column=0, padx=10, pady=5, sticky="w")
-    for j, event in enumerate(current_event_order):
+    for j, event in enumerate(config.current_event_order):
         tk.Label(summary_frame, text=event, font=("Helvetica", 12, "bold")).grid(row=0, column=j + 1, padx=5, pady=5, sticky="w")
-    tk.Label(summary_frame, text="Total", font=("Helvetica", 12, "bold")).grid(row=0, column=len(current_event_order) + 1, padx=10, pady=5, sticky="w")
+    tk.Label(summary_frame, text="Total", font=("Helvetica", 12, "bold")).grid(row=0, column=len(config.current_event_order) + 1, padx=10, pady=5, sticky="w")
 
 
     for i, thrower in enumerate(config.throwers):
         full_name = f"{thrower[0]} {thrower[1]}"
-        raw_scores = total_scores.get(full_name, [0] * len(current_event_order))
+        raw_scores = config.total_scores.get(full_name, [0] * len(config.current_event_order))
 
         tk.Label(summary_frame, text=full_name, font=("Helvetica", 11)).grid(
             row=i + 1, column=0, sticky="w", padx=10, pady=2)
 
         total_points = 0
-        for j, event in enumerate(current_event_order):
+        for j, event in enumerate(config.current_event_order):
             if j < len(raw_scores):
                 raw_score = raw_scores[j]
             else:
@@ -481,7 +450,7 @@ def update_total_points_tab():
 
         # FINAL total from converted scores, not raw
         tk.Label(summary_frame, text=str(total_points), font=("Helvetica", 11, "bold")).grid(
-            row=i + 1, column=len(current_event_order) + 1, padx=10, pady=2)
+            row=i + 1, column=len(config.current_event_order) + 1, padx=10, pady=2)
 
 
 def next_event_grouping():
@@ -491,7 +460,7 @@ def next_event_grouping():
 
     print("Events:", current_event, "- ", current_event);
 
-    if current_event not in current_event_order:
+    if current_event not in config.current_event_order:
         messagebox.showerror("Invalid Tab", "Please select a valid event tab.")
         return
 
@@ -499,22 +468,22 @@ def next_event_grouping():
     save_event_results(current_event)
 
     # Step 3: Determine next event
-    current_index = current_event_order.index(current_event)
-    if current_index + 1 >= len(current_event_order):
+    current_index = config.current_event_order.index(current_event)
+    if current_index + 1 >= len(config.current_event_order):
         messagebox.showinfo("End", "No next event after this.")
         return
 
-    next_event = current_event_order[current_index + 1]
+    next_event = config.current_event_order[current_index + 1]
 
     # Step 4: Build (score, thrower) list using updated total scores
     thrower_scores = []
     for thrower in config.throwers:
         full_name = f"{thrower[0]} {thrower[1]}"
-        total = total_scores.get(full_name, [0] * (len(current_event_order) + 1))[-1]
+        total = config.total_scores.get(full_name, [0] * (len(config.current_event_order) + 1))[-1]
         thrower_scores.append((total, thrower))
 
     thrower_scores.sort(reverse=True, key=lambda x: x[0])
-    num_groups = event_circle_counts.get(next_event, 3)
+    num_groups = config.event_circle_counts.get(next_event, 3)
     fair_groups = make_fair_competitive_groups(thrower_scores, num_groups)
 
     print('Debug')
@@ -547,7 +516,7 @@ def create_event_group_tab(event_name, thrower_list):
     config.tree.pack(fill="both", expand=True, padx=10, pady=10)
 
     # Get number of circles for this event
-    num_circles = event_circle_counts.get(event_name, 3)
+    num_circles = config.event_circle_counts.get(event_name, 3)
     num_circles = max(1, num_circles)
 
     # Distribute throwers sequentially into groups
@@ -563,7 +532,7 @@ def create_event_group_tab(event_name, thrower_list):
 
 # Modify save_accuracy_results to add the next event's score tab and group tab
 def save_accuracy_results():
-    event = current_event_order[0]
+    event = config.current_event_order[0]
     folder = "output"
     os.makedirs(folder, exist_ok=True)
     filename = os.path.join(folder, f"{event.lower().replace(' ', '_')}_results.csv")
@@ -574,7 +543,7 @@ def save_accuracy_results():
 
         for thrower in config.throwers:
             full_name = f"{thrower[0]} {thrower[1]}"
-            entry = score_entries.get((event, full_name))
+            entry = config.score_entries.get((event, full_name))
             if entry:
                 try:
                     score = int(entry.get())
@@ -583,11 +552,11 @@ def save_accuracy_results():
 
                 writer.writerow([full_name, score])
 
-                if full_name not in total_scores:
-                    total_scores[full_name] = [0] * len(current_event_order)
-                event_index = current_event_order.index(event)
-                total_scores[full_name][event_index] = score
-                total_scores[full_name][-1:] = [sum(total_scores[full_name][:-1])]
+                if full_name not in config.total_scores:
+                    config.total_scores[full_name] = [0] * len(config.current_event_order)
+                event_index = config.current_event_order.index(event)
+                config.total_scores[full_name][event_index] = score
+                config.total_scores[full_name][-1:] = [sum(config.total_scores[full_name][:-1])]
 
     update_total_points_tab()
     messagebox.showinfo("Saved", f"{event} scores saved to {filename}")
@@ -612,14 +581,14 @@ def update_total_points_tab():
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar.pack(side="right", fill="y")
 
-    headers = ["Rank", "Thrower Name"] + current_event_order + ["Total"]
+    headers = ["Rank", "Thrower Name"] + config.current_event_order + ["Total"]
     for j, title in enumerate(headers):
         tk.Label(frame, text=title, font=("Helvetica", 12, "bold")).grid(row=0, column=j, padx=5, pady=5, sticky="w")
 
     scores_list = []
     for thrower in config.throwers:
         full_name = f"{thrower[0]} {thrower[1]}"
-        scores = total_scores.get(full_name, [0] * (len(current_event_order) + 1))
+        scores = config.total_scores.get(full_name, [0] * (len(config.current_event_order) + 1))
         scores_list.append((scores[-1], full_name, scores))
 
     scores_list.sort(reverse=True, key=lambda x: x[0])
@@ -642,7 +611,7 @@ def save_event_results(event, summary_lines=None):
 
         for thrower in config.throwers:
             full_name = f"{thrower[0]} {thrower[1]}"
-            entry = score_entries.get((event, full_name))
+            entry = config.score_entries.get((event, full_name))
             if entry:
                 try:
                     score = entry.get().strip()
@@ -652,13 +621,13 @@ def save_event_results(event, summary_lines=None):
 
                 writer.writerow([full_name, score])
 
-                if full_name not in total_scores:
-                    total_scores[full_name] = [0] * len(current_event_order)
-                event_index = current_event_order.index(event)
+                if full_name not in config.total_scores:
+                    config.total_scores[full_name] = [0] * len(config.current_event_order)
+                event_index = config.current_event_order.index(event)
                 converted_score = calculate_event_points(event, score.strip())
 
-                total_scores[full_name][event_index] = converted_score
-                total_scores[full_name][-1:] = [sum(total_scores[full_name][:-1])]
+                config.total_scores[full_name][event_index] = converted_score
+                config.total_scores[full_name][-1:] = [sum(config.total_scores[full_name][:-1])]
 
     update_total_points_tab()
     messagebox.showinfo("Saved", f"{event} scores saved to {filename}")
@@ -667,7 +636,7 @@ def save_event_results(event, summary_lines=None):
     event_scores = {}
     for thrower in config.throwers:
         full_name = f"{thrower[0]} {thrower[1]}"
-        entry = score_entries.get((event, full_name))
+        entry = config.score_entries.get((event, full_name))
         score = entry.get().strip() if entry else "0"
         event_scores[full_name] = score
 
@@ -678,7 +647,7 @@ def save_event_results(event, summary_lines=None):
 
 
 def create_score_tab(event):
-    if event not in current_event_order:
+    if event not in config.current_event_order:
         return
 
     event_tab = ttk.Frame(scores_notebook)  # use the Scores sub-notebook
@@ -702,7 +671,7 @@ def create_score_tab(event):
         entry = tk.Entry(scrollable_frame, width=10)
         entry.insert(0, "0")
         entry.grid(row=i + 1, column=1, padx=10, pady=2)
-        score_entries[(event, full_name)] = entry
+        config.score_entries[(event, full_name)] = entry
 
     button_bar = tk.Frame(scrollable_frame)
     button_bar.grid(row=len(config.throwers) + 2, column=0, columnspan=2, pady=10)
@@ -717,12 +686,12 @@ def create_score_tab(event):
 
 
 def create_score_tab_for_first_event_and_summary():
-    if not current_event_order:
+    if not config.current_event_order:
         messagebox.showwarning("No Events", "No events defined in the order.")
         return
 
     # === First Event Tab ===
-    first_event = current_event_order[0]
+    first_event = config.current_event_order[0]
     event_tab = ttk.Frame(notebook)
     notebook.add(event_tab, text=first_event)
 
@@ -750,7 +719,7 @@ def create_score_tab_for_first_event_and_summary():
         entry = tk.Entry(scrollable_frame, width=10)
         entry.insert(0, "0")
         entry.grid(row=i + 1, column=1, padx=10, pady=2)
-        score_entries[(first_event, full_name)] = entry
+        config.score_entries[(first_event, full_name)] = entry
 
     # === Final Summary Tab ===
     summary_tab = ttk.Frame(notebook)
@@ -774,10 +743,10 @@ def create_score_tab_for_first_event_and_summary():
     # Header Row
     tk.Label(summary_frame, text="Thrower Name", font=("Helvetica", 12, "bold")).grid(row=0, column=0, padx=10, pady=5, sticky="w")
 
-    for j, event in enumerate(current_event_order):
+    for j, event in enumerate(config.current_event_order):
         tk.Label(summary_frame, text=event, font=("Helvetica", 12, "bold")).grid(row=0, column=j + 1, padx=5, pady=5, sticky="w")
 
-    tk.Label(summary_frame, text="Total", font=("Helvetica", 12, "bold")).grid(row=0, column=len(current_event_order) + 1, padx=10, pady=5, sticky="w")
+    tk.Label(summary_frame, text="Total", font=("Helvetica", 12, "bold")).grid(row=0, column=len(config.current_event_order) + 1, padx=10, pady=5, sticky="w")
 
     # Data Rows
     for i, thrower in enumerate(config.throwers):
@@ -785,11 +754,11 @@ def create_score_tab_for_first_event_and_summary():
         tk.Label(summary_frame, text=full_name, font=("Helvetica", 11)).grid(row=i + 1, column=0, sticky="w", padx=10, pady=2)
 
         total_score = 0
-        for j in range(len(current_event_order)):
+        for j in range(len(config.current_event_order)):
             tk.Label(summary_frame, text="0", font=("Helvetica", 11)).grid(row=i + 1, column=j + 1, padx=5, pady=2)
 
         tk.Label(summary_frame, text=str(total_score), font=("Helvetica", 11, "bold")).grid(
-            row=i + 1, column=len(current_event_order) + 1, padx=10, pady=2
+            row=i + 1, column=len(config.current_event_order) + 1, padx=10, pady=2
         )
 
     button_bar = tk.Frame(scrollable_frame)
@@ -806,7 +775,7 @@ def create_score_tab_for_first_event_and_summary():
 added_score_tabs = set()  # global or module-level set
 
 def create_all_score_tabs():
-    for event in current_event_order:
+    for event in config.current_event_order:
         if event not in added_score_tabs:
             create_score_tab(event)
             added_score_tabs.add(event)

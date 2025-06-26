@@ -23,3 +23,12 @@ first_name_entry = None
 last_name_entry = None
 nationality_entry = None
 category_entry = None
+
+score_entries = {}  # Format: { (event, full_name): entry_widget }
+total_scores = {}   # Format: { full_name: [score_per_event, ..., total] }
+
+
+current_event_order = []
+event_circle_counts = {}
+selected_event_index = None
+circle_entries = []

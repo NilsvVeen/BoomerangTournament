@@ -1,7 +1,7 @@
 
 import config
 
-
+import re
 
 def make_fair_competitive_groups(throwers_with_scores, num_groups=4):
     sorted_throwers = sorted(throwers_with_scores, key=lambda x: -x[0])
@@ -56,8 +56,15 @@ def make_fair_competitive_groups(throwers_with_scores, num_groups=4):
         # Collect all full names
         full_names = []
         for item in members:
-            print("DEBUG", config.tree.item(item, "values")[0],int(config.tree.item(item, "values")[0])  )
-            row_index = int(config.tree.item(item, "values")[0]) - 1
+            print("DEBUG", config.tree.item(item, "values")[0]  )
+            value = config.tree.item(item, "values")[0]
+            match = re.search(r'\d+', value)
+            if match:
+                row_index = int(match.group()) - 1
+            else:
+                raise ValueError(f"Could not extract number from value: {value}")
+
+            # row_index = int(config.tree.item(item, "values")[0]) - 1
             first_name, last_name, *_ = config.throwers[row_index]
             full_names.append(f"{first_name} {last_name}")
 
