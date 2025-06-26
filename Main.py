@@ -10,37 +10,17 @@ import random
 import shutil
 import os
 
+import config
 
-uploadingToWebsite = True # disabled for now avoid writing to website.
-event_circle_counts = {}  # e.g., {"Accuracy": 3, "Fast Catch": 2}
-
-
-website_credentials = {
-    "username": "",
-    "app_password": "",
-    "base_url": "",
-    "tournament_slug": ""
-}
+from websiteConnect import *
 
 
-def load_website_credentials():
-    try:
-        with open("input/website_config.txt", "r", encoding="utf-8") as f:
-            for line in f:
-                if '=' in line:
-                    key, value = line.strip().split("=", 1)
-                    print(key,value)
-                    website_credentials[key.strip()] = value.strip()
-    except FileNotFoundError:
-        pass
+
+
 
 load_website_credentials()
 
-def save_website_credentials():
-    os.makedirs("input", exist_ok=True)
-    with open("input/website_config.txt", "w", encoding="utf-8") as f:
-        for key, value in website_credentials.items():
-            f.write(f"{key}={value}\n")
+
 
 
 
@@ -88,11 +68,11 @@ def format_ranked_results(event_title, scores_dict):
 
 
 def update_tournament_page(event_title, scores_html):
-    if uploadingToWebsite:
-        username = website_credentials.get("username", "")
-        app_password = website_credentials.get("app_password", "")
-        base_url = website_credentials.get("base_url", "")
-        tournament_slug = website_credentials.get("tournament_slug", "")
+    if config.uploadingToWebsite:
+        username = config.website_credentials.get("username", "")
+        app_password = config.website_credentials.get("app_password", "")
+        base_url = config.website_credentials.get("base_url", "")
+        tournament_slug = config.website_credentials.get("tournament_slug", "")
         auth = HTTPBasicAuth(username, app_password)
 
         if not all([username, app_password, base_url, tournament_slug]):
@@ -758,22 +738,22 @@ tournament_slug_entry.grid(row=3, column=1, padx=5, pady=2)
 def load_credentials_to_fields():
 
     username_entry.delete(0, tk.END)
-    username_entry.insert(0, website_credentials["username"])
+    username_entry.insert(0, config.website_credentials["username"])
     app_password_entry.delete(0, tk.END)
-    app_password_entry.insert(0, website_credentials["app_password"])
+    app_password_entry.insert(0, config.website_credentials["app_password"])
     base_url_entry.delete(0, tk.END)
-    base_url_entry.insert(0, website_credentials["base_url"])
+    base_url_entry.insert(0, config.website_credentials["base_url"])
     tournament_slug_entry.delete(0, tk.END)
-    tournament_slug_entry.insert(0, website_credentials["tournament_slug"])
+    tournament_slug_entry.insert(0, config.website_credentials["tournament_slug"])
     print("Credentials inserted:")
-    print(website_credentials)
+    print(config.website_credentials)
 
 def save_credentials_from_fields():
-    website_credentials["username"] = username_entry.get().strip()
-    website_credentials["app_password"] = app_password_entry.get().strip()
-    website_credentials["base_url"] = base_url_entry.get().strip()
-    website_credentials["tournament_slug"] = tournament_slug_entry.get().strip()
-    save_website_credentials()
+    config.website_credentials["username"] = username_entry.get().strip()
+    config.website_credentials["app_password"] = app_password_entry.get().strip()
+    config.website_credentials["base_url"] = base_url_entry.get().strip()
+    config.website_credentials["tournament_slug"] = tournament_slug_entry.get().strip()
+    save_config.website_credentials()
     messagebox.showinfo("Saved", "Website credentials saved.")
 
 button_frame = tk.Frame(website_tab)
