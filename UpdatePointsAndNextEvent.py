@@ -118,26 +118,46 @@ def next_event_grouping():
 
 
 def create_event_group_tab(event_name, thrower_list):
+    tab_title = f"{event_name} Circles"
     group_tab = ttk.Frame(config.circles_notebook)
-    config.circles_notebook.add(group_tab, text=f"{event_name} Circles")
 
+    existing_tabs = config.circles_notebook.tabs()
+    existing_titles = [config.circles_notebook.tab(tid, "text") for tid in existing_tabs]
+
+    if tab_title in existing_titles:
+        print(f"[DEBUG] Tab '{tab_title}' already exists — skipping creation.")
+        return
+
+    # Determine the correct index to insert the tab
+    insert_index = 0
+    for event in config.current_event_order:
+        expected_title = f"{event} Circles"
+        if expected_title == tab_title:
+            break
+        if expected_title in existing_titles:
+            insert_index += 1
+
+    if insert_index >= len(existing_tabs):
+        # Just add it to the end if index is out of range
+        config.circles_notebook.add(group_tab, text=tab_title)
+    else:
+        config.circles_notebook.insert(insert_index, group_tab, text=tab_title)
+
+    # Proceed with TreeView and data population
     config.tree = ttk.Treeview(group_tab, columns=("Circle", "First Name", "Last Name", "Nationality", "Category"), show="headings")
     for col in config.tree["columns"]:
         config.tree.heading(col, text=col)
     config.tree.pack(fill="both", expand=True, padx=10, pady=10)
 
-    # Get number of circles for this event
     num_circles = config.event_circle_counts.get(event_name, 3)
     num_circles = max(1, num_circles)
 
-    # Distribute throwers sequentially into groups
     group_size = (len(thrower_list) + num_circles - 1) // num_circles
     groups = [thrower_list[i * group_size : (i + 1) * group_size] for i in range(num_circles)]
 
     for i, group in enumerate(groups, start=1):
         for thrower in group:
             config.tree.insert("", "end", values=(f"Circle {i}", *thrower))
-
 
 
 
