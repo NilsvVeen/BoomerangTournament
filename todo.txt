@@ -3,7 +3,7 @@
 - load/save for everything
 - make tabs different ✅Done: now subtabs
 - clean up code and put in different files
-- make GUI fancy
+- make GUI fancy ✅Done: tempalte
 - if group small, add people to other groups
 - allow users to be swapped to a different group?
 - include tournament name field ✅Done: slug for website

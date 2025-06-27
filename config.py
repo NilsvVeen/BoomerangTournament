@@ -42,3 +42,9 @@ tournament_slug_entry = None
 # Event orders
 event_var = None
 event_frame = None
+
+added_score_tabs = None
+
+notebook = None
+scores_notebook = None
+circles_notebook = None
