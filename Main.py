@@ -11,6 +11,7 @@ import shutil
 import os
 
 import config
+from ttkthemes import ThemedTk
 
 from websiteConnect import *
 from updateWebsite import *
@@ -47,6 +48,8 @@ load_website_credentials()
 print("AAA")
 # GUI setup
 root = tk.Tk()
+
+# root = ThemedTk(theme="adapta")  # Or "equilux", "arc", "adapta", etc.
 root.title("Boomerang Tournament Manager")
 
 # Create a Notebook widget for tabs
