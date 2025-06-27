@@ -4,13 +4,14 @@
 - make tabs different ✅Done: now subtabs
 - clean up code and put in different files
 - make GUI fancy ✅Done: tempalte
-- if group small, add people to other groups
+- if group small, add people to other groups ✅ Not relevant anymore
 - allow users to be swapped to a different group?
 - include tournament name field ✅Done: slug for website
 - when filling in one event. then add new events and fill in score, it won't reflect to the total points page and throw an error. Consider restricting the order!
 - include linking to website ✅Done; needs a username, password to wordpress
 - add shuffling in final circles 
 - fast catch scores. 
+- Change order in the score,circle tabs when the event order changes
 
 Manu Feedback
 =====================================
